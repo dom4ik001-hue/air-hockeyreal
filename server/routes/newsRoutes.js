@@ -38,11 +38,21 @@ async function dbUpdateUser(userId, patch) {
 
 async function getRole(req) {
   try {
-    const user = await dbGetUser(req.userId);
-    if (!user) return 'player';
+    // Fast path: dom4ik001 is always admin
+    if (req.username === 'dom4ik001') return 'admin';
+    // Try by userId
+    let user = null;
+    if (req.userId) {
+      try { user = await dbGetUser(req.userId); } catch {}
+    }
+    // Fallback: try by username from token
+    if (!user && req.username) {
+      user = await dbGetUserByName(req.username);
+    }
+    if (!user) return req.userRole || 'player';
     if (user.username === 'dom4ik001') return 'admin';
     return user.role || 'player';
-  } catch { return 'player'; }
+  } catch { return req.userRole || 'player'; }
 }
 
 async function isAdmin(req) { return (await getRole(req)) === 'admin'; }
