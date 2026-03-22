@@ -191,31 +191,41 @@ function showMatchEnd(data) {
 }
 
 function startOnlineSearch() {
-  var token = localStorage.getItem('ah_token');
-  // Restore currentUser from cache if missing
+  // Ensure currentUser is available
   if (!currentUser) { var c = getUser(); if (c) { currentUser = c; updateHeaderUser(); } }
-  if (!currentUser) { showToast('Войдите в аккаунт для онлайн-игры', 'warning'); showScreen('screen-play-setup'); return; }
+  if (!currentUser || !currentUser.username) {
+    showToast('Войдите в аккаунт для онлайн-игры', 'warning');
+    showScreen('screen-play-setup'); return;
+  }
+  var username = currentUser.username;
+  var userId   = currentUser.id || currentUser._id || null;
+  var token    = localStorage.getItem('ah_token');
+
   showScreen('screen-game');
   var overlaySearch = document.getElementById('overlay-searching');
   var rangeText = document.getElementById('search-range-text');
-  var timeText = document.getElementById('search-time-text');
+  var timeText  = document.getElementById('search-time-text');
   overlaySearch.classList.remove('hidden');
-  var elapsed = 0, range = 200;
+  var elapsed = 0;
   searchTimer = setInterval(function() {
     elapsed++;
-    rangeText.textContent = elapsed >= 20
-      ? '🤖 Подбираем бота...'
-      : 'Поиск соперника... (' + (20 - elapsed) + 'с до бота)';
+    rangeText.textContent = elapsed >= 20 ? '🤖 Подбираем бота...' : 'Поиск соперника... (' + (20 - elapsed) + 'с до бота)';
     timeText.textContent = elapsed + ' сек.';
   }, 1000);
+
   offSocketEvent('authenticated', _onAuthenticated);
-  offSocketEvent('match_found', _onMatchFound);
-  offSocketEvent('auth_error', _onAuthError);
-  onSocketEvent('authenticated', _onAuthenticated);
-  onSocketEvent('match_found', _onMatchFound);
-  onSocketEvent('auth_error', _onAuthError);
+  offSocketEvent('match_found',   _onMatchFound);
+  offSocketEvent('auth_error',    _onAuthError);
+  onSocketEvent('authenticated',  _onAuthenticated);
+  onSocketEvent('match_found',    _onMatchFound);
+  onSocketEvent('auth_error',     _onAuthError);
+
   var sock = connectSocket();
-  function doAuth() { setTimeout(function() { socketAuthenticate(token, currentUser ? currentUser.username : null, currentUser ? currentUser.id : null); }, 150); }
+  function doAuth() {
+    setTimeout(function() {
+      socketAuthenticate(token, username, userId);
+    }, 150);
+  }
   if (sock.connected) { doAuth(); }
   else {
     function _onConn() { offSocketEvent('_connected', _onConn); doAuth(); }
@@ -690,25 +700,19 @@ function _formatUptime(sec) {
 }
 
 async function tryAutoLogin() {
-  if (!apiIsLoggedIn()) return false;
-  // Restore from cache immediately
+  // Restore from cache — this is the source of truth
   var cached = getUser();
-  if (cached) { currentUser = cached; updateHeaderUser(); }
-  try {
-    var res = await apiGetProfile();
-    setUser(res.user || res);
-    return true;
-  } catch (e) {
-    // Token invalid or server restarted — if we have cached user data, stay logged in
-    // Only hard-logout if server explicitly says token is bad AND we have no cache
-    if ((e.status === 401 || e.status === 403) && !cached) {
-      apiLogout();
-      return false;
-    }
-    // Keep cached user — they'll get a fresh token on next login
-    if (cached) return true;
-    return false;
-  }
+  var token = localStorage.getItem('ah_token');
+  if (!cached || !token) return false;
+  // Use cached user immediately — no server round-trip needed
+  currentUser = cached;
+  updateHeaderUser();
+  // Try to refresh from server in background (non-blocking, silent fail)
+  apiGetProfile().then(function(res) {
+    var fresh = res.user || res;
+    if (fresh && fresh.username) setUser(fresh);
+  }).catch(function() { /* silent — keep cached user */ });
+  return true;
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
