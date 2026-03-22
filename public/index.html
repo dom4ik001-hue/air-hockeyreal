@@ -158,6 +158,22 @@
           </div>
           <span class="side-arrow">›</span>
         </button>
+        <button class="side-card glass-panel hidden" id="btn-admin">
+          <span class="side-icon">🛡️</span>
+          <div class="side-text">
+            <span class="side-title">Админ панель</span>
+            <span class="side-desc">Управление новостями</span>
+          </div>
+          <span class="side-arrow">›</span>
+        </button>
+      </div>
+
+      <!-- News panel -->
+      <div class="menu-news">
+        <div class="news-header">📢 Новости</div>
+        <div class="news-list" id="news-list">
+          <div class="news-empty">Загрузка...</div>
+        </div>
       </div>
     </div>
 
@@ -378,6 +394,41 @@
         <div class="setting-row">
           <label>🎨 Цвет биты</label>
           <input type="color" id="setting-mallet-color" value="#3b82f6" class="color-picker" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN MODAL ===== -->
+  <div id="modal-admin" class="modal-overlay hidden">
+    <div class="modal-content glass-panel admin-modal">
+      <div class="modal-header">
+        <h2>🛡️ Админ панель</h2>
+        <button class="btn btn-icon-only modal-close" id="close-admin">✖</button>
+      </div>
+      <div class="admin-body">
+        <h3>Опубликовать новость</h3>
+        <form id="admin-news-form">
+          <div class="form-group">
+            <label>Тип</label>
+            <select id="admin-news-type" class="setting-select" style="width:100%">
+              <option value="news">📢 Новость</option>
+              <option value="update">🚀 Обновление</option>
+              <option value="maintenance">🔧 Тех. перерыв</option>
+              <option value="event">🎉 Событие</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Текст</label>
+            <textarea id="admin-news-text" rows="3" placeholder="Текст новости..." style="background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:10px;color:var(--text-primary);width:100%;resize:vertical;font-family:inherit"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">📢 Опубликовать</button>
+        </form>
+        <hr style="border-color:var(--glass-border);margin:16px 0">
+        <h3>Удалить новость</h3>
+        <div style="display:flex;gap:8px">
+          <input id="admin-delete-id" type="text" placeholder="ID новости" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:8px;color:var(--text-primary)" />
+          <button class="btn btn-danger" id="admin-news-delete">🗑️ Удалить</button>
         </div>
       </div>
     </div>

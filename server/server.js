@@ -13,6 +13,7 @@ const jwt        = require('jsonwebtoken');
 const { connectDB }      = require('./config/db');
 const authRoutes         = require('./routes/authRoutes');
 const apiRoutes          = require('./routes/apiRoutes');
+const newsRoutes         = require('./routes/newsRoutes');
 const { joinQueue, leaveQueue, startMatchmaking } = require('./game/matchmaker');
 const { handlePlayerInput, handleDisconnect, getPlayerIndex } = require('./game/roomManager');
 const User = require('./models/User');
@@ -51,6 +52,7 @@ app.use(express.static(path.join(__dirname, '../public'), {
 // ─── REST Routes ─────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api',      apiRoutes);
+app.use('/api',      newsRoutes);
 
 // SPA fallback
 app.get('*', (req, res) => {
