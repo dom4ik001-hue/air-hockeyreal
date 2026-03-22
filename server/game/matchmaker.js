@@ -19,13 +19,12 @@ let matchmakingInterval = null;
  * Add player to matchmaking queue.
  */
 function joinQueue(player) {
-  // Prevent duplicate entries
   leaveQueue(player.socketId);
 
   queue.push({
     ...player,
     joinedAt: Date.now(),
-    range: 200
+    range: 10000 // Start with huge range — always find a match
   });
 
   console.log(`[MM] ${player.username} (${player.elo} ELO) joined queue. Queue size: ${queue.length}`);
