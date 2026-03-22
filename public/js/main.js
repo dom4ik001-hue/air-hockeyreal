@@ -103,12 +103,8 @@ function bindSetupEvents() {
   document.getElementById('btn-setup-back').addEventListener('click', function() { showScreen('screen-menu'); });
   document.getElementById('btn-start-game').addEventListener('click', function() {
     if (selectedMode === 'online' && !isLoggedIn()) { showToast('Войдите для онлайн-игры', 'warning'); return; }
-    if (selectedMode === 'online') {
-      startOnlineSearch();
-    } else {
-      // bot or local — always use startGame, never online
-      startGame(selectedMode, { mapId: selectedMap });
-    }
+    if (selectedMode === 'online') { startOnlineSearch(); }
+    else { startGame(selectedMode, { mapId: selectedMap }); }
   });
 }
 
@@ -116,6 +112,11 @@ function drawAllMapPreviews() {
   document.querySelectorAll('.map-preview[data-map]').forEach(function(canvas) {
     drawMapPreview(canvas, canvas.dataset.map);
   });
+}
+
+function getMobileControl() {
+  var el = document.getElementById('setting-mobile-control');
+  return el ? el.value : 'joystick';
 }
 
 function startGame(mode, options) {
@@ -135,8 +136,10 @@ function startGame(mode, options) {
 
   var hint = document.getElementById('controls-hint');
   var mobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  var mobileControl = getMobileControl();
   hint.textContent = mobile
-    ? (mode === 'local' ? 'Левая половина — Игрок 2 | Правая — Игрок 1' : 'Тяни джойстик для управления')
+    ? (mode === 'local' ? 'Левая половина — Игрок 2 | Правая — Игрок 1'
+      : (mobileControl === 'touch' ? 'Касайся экрана для управления' : 'Тяни джойстик для управления'))
     : (mode === 'local' ? 'WASD — Игрок 1 | Стрелки — Игрок 2' : 'WASD или мышь для управления');
   hint.classList.remove('hidden');
   setTimeout(function() { hint.classList.add('hidden'); }, 3500);
@@ -149,7 +152,10 @@ function startGame(mode, options) {
   var colorEl = document.getElementById('setting-mallet-color');
   var malletColor = colorEl ? colorEl.value : '#e03030';
 
-  gameEngine = new GameEngine(canvas, mode, { mapId: mapId, particles: particles, p1Color: malletColor });
+  gameEngine = new GameEngine(canvas, mode, {
+    mapId: mapId, particles: particles,
+    p1Color: malletColor, mobileControl: mobileControl
+  });
 
   var overlayCountdown = document.getElementById('overlay-countdown');
   var countdownText = document.getElementById('countdown-text');
@@ -180,6 +186,13 @@ function showMatchEnd(data) {
 }
 
 function startOnlineSearch() {
+  var token = localStorage.getItem('ah_token');
+  if (!token) {
+    showToast('Войдите в аккаунт для онлайн-игры', 'warning');
+    showScreen('screen-play-setup');
+    return;
+  }
+
   showScreen('screen-game');
   var overlaySearch = document.getElementById('overlay-searching');
   var rangeText = document.getElementById('search-range-text');
@@ -192,16 +205,35 @@ function startOnlineSearch() {
     rangeText.textContent = 'Диапазон ELO: ±' + range;
     timeText.textContent = elapsed + ' сек.';
   }, 1000);
-  connectSocket();
-  socketAuthenticate(localStorage.getItem('ah_token'));
+
+  // Remove stale listeners before adding new ones
+  offSocketEvent('authenticated', _onAuthenticated);
+  offSocketEvent('match_found', _onMatchFound);
+  offSocketEvent('auth_error', _onAuthError);
   onSocketEvent('authenticated', _onAuthenticated);
   onSocketEvent('match_found', _onMatchFound);
   onSocketEvent('auth_error', _onAuthError);
+
+  var sock = connectSocket();
+
+  if (sock.connected) {
+    setTimeout(function() { socketAuthenticate(token); }, 100);
+  } else {
+    function _onConn() {
+      offSocketEvent('_connected', _onConn);
+      setTimeout(function() { socketAuthenticate(token); }, 100);
+    }
+    onSocketEvent('_connected', _onConn);
+  }
 }
 
 function _onAuthenticated() { socketFindMatch(); }
 function _onMatchFound(data) { _cleanupSearch(); playerIndex = data.playerIndex; startOnlineGame(data); }
-function _onAuthError(err) { _cleanupSearch(); showToast((err && err.message) || 'Ошибка авторизации', 'error'); showScreen('screen-menu'); }
+function _onAuthError(err) {
+  _cleanupSearch();
+  showToast((err && err.message) || 'Ошибка авторизации', 'error');
+  showScreen('screen-menu');
+}
 
 function _cleanupSearch() {
   clearInterval(searchTimer);
@@ -226,7 +258,7 @@ function startOnlineGame(matchData) {
   document.getElementById('hud-p2-elo').textContent = playerIndex === 1 ? matchData.opponentElo : currentUser.elo_rating;
   document.getElementById('hud-map-badge').textContent = mapCfg.name;
   if (gameEngine) { gameEngine.stop(); gameEngine = null; }
-  gameEngine = new GameEngine(canvas, 'online', { mapId: mapId });
+  gameEngine = new GameEngine(canvas, 'online', { mapId: mapId, mobileControl: getMobileControl() });
   gameEngine.onSendInput = function(x, y) { socketSendInput(x, y); };
   onSocketEvent('game_state_update', function(state) { gameEngine.applyNetworkState(state); });
   onSocketEvent('goal_scored', function(data) {
@@ -254,35 +286,23 @@ function _showMatchEndOnline(data) {
 }
 
 function bindGameEvents() {
-  // Cancel search — bound once here, always works
   document.getElementById('btn-cancel-search').addEventListener('click', function() {
-    _cleanupSearch();
-    socketCancelSearch();
-    showScreen('screen-menu');
+    _cleanupSearch(); socketCancelSearch(); showScreen('screen-menu');
   });
-
   document.getElementById('btn-game-back').addEventListener('click', function() {
     if (gameEngine) { gameEngine.stop(); gameEngine = null; }
-    _cleanupSearch();
-    socketLeaveMatch();
-    showScreen('screen-menu');
+    _cleanupSearch(); socketLeaveMatch(); showScreen('screen-menu');
   });
-
   document.getElementById('btn-play-again').addEventListener('click', function() {
     document.getElementById('overlay-match-end').classList.add('hidden');
     socketLeaveMatch();
-    if (selectedMode === 'online') {
-      startOnlineSearch();
-    } else {
-      startGame(selectedMode, { mapId: selectedMap });
-    }
+    if (selectedMode === 'online') { startOnlineSearch(); }
+    else { startGame(selectedMode, { mapId: selectedMap }); }
   });
-
   document.getElementById('btn-back-menu').addEventListener('click', function() {
     document.getElementById('overlay-match-end').classList.add('hidden');
     if (gameEngine) { gameEngine.stop(); gameEngine = null; }
-    socketLeaveMatch();
-    showScreen('screen-menu');
+    socketLeaveMatch(); showScreen('screen-menu');
   });
 }
 
