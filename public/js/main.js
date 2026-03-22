@@ -192,7 +192,6 @@ function showMatchEnd(data) {
 
 function startOnlineSearch() {
   var token = localStorage.getItem('ah_token');
-  if (!token) { showToast('Войдите в аккаунт для онлайн-игры', 'warning'); showScreen('screen-play-setup'); return; }
   // Restore currentUser from cache if missing
   if (!currentUser) { var c = getUser(); if (c) { currentUser = c; updateHeaderUser(); } }
   if (!currentUser) { showToast('Войдите в аккаунт для онлайн-игры', 'warning'); showScreen('screen-play-setup'); return; }
@@ -216,7 +215,7 @@ function startOnlineSearch() {
   onSocketEvent('match_found', _onMatchFound);
   onSocketEvent('auth_error', _onAuthError);
   var sock = connectSocket();
-  function doAuth() { setTimeout(function() { socketAuthenticate(token); }, 150); }
+  function doAuth() { setTimeout(function() { socketAuthenticate(token, currentUser ? currentUser.username : null, currentUser ? currentUser.id : null); }, 150); }
   if (sock.connected) { doAuth(); }
   else {
     function _onConn() { offSocketEvent('_connected', _onConn); doAuth(); }

@@ -57,11 +57,10 @@ export function disconnectSocket() {
 
 // ─── Emit helpers ────────────────────────────────────────────
 
-export function socketAuthenticate(token) {
+export function socketAuthenticate(token, username, userId) {
   if (!socket) return;
-  // Small delay to ensure server-side socket handler is ready
   setTimeout(function() {
-    if (socket) socket.emit('authenticate', { token });
+    if (socket) socket.emit('authenticate', { token, username, userId });
   }, 100);
 }
 

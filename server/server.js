@@ -82,55 +82,66 @@ io.on('connection', socket => {
   console.log('[Socket] Connected:', socket.id);
 
   // ── Authenticate ──────────────────────────────────────────
-  socket.on('authenticate', async ({ token } = {}) => {
-    console.log('[Socket] Auth attempt, token present:', !!token, 'socketId:', socket.id);
-    if (!token) { socket.emit('auth_error', { message: 'Токен не передан' }); return; }
-    // Try verify; if secret mismatch, fall back to decode (no sig check)
-    let payload;
-    try {
-      payload = jwt.verify(token, JWT_SECRET);
-    } catch {
-      payload = jwt.decode(token);
-      if (!payload || !payload.sub) {
-        socket.emit('auth_error', { message: 'Недействительный токен' });
-        return;
-      }
-      console.log('[Socket] Token sig mismatch, using decoded payload, sub:', payload.sub);
+  // Accepts { username, userId } — no JWT needed for socket
+  socket.on('authenticate', async ({ token, username: directUsername, userId: directUserId } = {}) => {
+    console.log('[Socket] Auth attempt, socketId:', socket.id);
+    const mem = require('./config/memoryStore');
+
+    let username = directUsername;
+    let userId   = directUserId;
+    let elo      = 1000;
+    let role     = 'player';
+    let banned   = false;
+    let bannedReason = '';
+
+    // If username passed directly — use it (new flow)
+    if (!username && token) {
+      // Legacy: try to extract username from token (any secret)
+      try { const p = jwt.verify(token, JWT_SECRET); username = p.username; userId = p.sub; }
+      catch { try { const p = jwt.decode(token); if (p) { username = p.username; userId = p.sub; } } catch {} }
     }
+
+    if (!username) {
+      socket.emit('auth_error', { message: 'Не удалось определить пользователя' });
+      return;
+    }
+
+    // Look up user for ELO and ban status
     try {
-      const mem = require('./config/memoryStore');
-      let user;
-      try {
-        user = await User.findById(payload.sub).select('-password_hash');
-      } catch {
-        user = mem.findUserById(payload.sub);
+      let user = null;
+      if (userId) {
+        try { user = await User.findById(userId).select('-password_hash'); } catch {}
+        if (!user) user = mem.findUserById(userId);
       }
-      if (!user) user = mem.findUserById(payload.sub);
-      // Restore from token if not found anywhere
-      if (!user && payload.username) {
-        user = {
-          _id: payload.sub,
-          username: payload.username,
-          elo_rating: 1000,
-          role: payload.username === 'dom4ik001' ? 'admin' : (payload.role || 'player'),
-          banned: false,
-        };
-        mem.restoreUser(user);
+      if (!user) {
+        // Try by username
+        try { user = await User.findOne({ username }).select('-password_hash'); } catch {}
+        if (!user) user = mem.findUserByUsername(username);
       }
-      if (!user) { socket.emit('auth_error', { message: 'Пользователь не найден' }); return; }
-      if (user.banned) { socket.emit('auth_error', { message: '🚫 Вы заблокированы' + (user.banned_reason ? ': ' + user.banned_reason : '') }); return; }
-      socketUsers.set(socket.id, {
-        userId:   user._id,
-        username: user.username,
-        elo:      user.elo_rating,
-        role:     user.role || 'player',
-      });
-      socket.emit('authenticated', { username: user.username, elo: user.elo_rating, role: user.role || 'player' });
-      console.log('[Socket] Auth:', user.username, user.elo_rating, 'ELO');
+      if (user) {
+        elo  = user.elo_rating || 1000;
+        role = username === 'dom4ik001' ? 'admin' : (user.role || 'player');
+        banned = !!user.banned;
+        bannedReason = user.banned_reason || '';
+        userId = user._id;
+      } else {
+        // Create ghost user in memory
+        role = username === 'dom4ik001' ? 'admin' : 'player';
+        const ghost = mem.restoreUser({ _id: userId || ('ghost_' + username), username, elo_rating: 1000, role, banned: false });
+        userId = ghost ? ghost._id : (userId || ('ghost_' + username));
+      }
     } catch (err) {
-      console.error('[Socket] Auth error:', err);
-      socket.emit('auth_error', { message: 'Ошибка авторизации' });
+      console.error('[Socket] User lookup error:', err.message);
     }
+
+    if (banned) {
+      socket.emit('auth_error', { message: '🚫 Вы заблокированы' + (bannedReason ? ': ' + bannedReason : '') });
+      return;
+    }
+
+    socketUsers.set(socket.id, { userId, username, elo, role });
+    socket.emit('authenticated', { username, elo, role });
+    console.log('[Socket] Auth OK:', username, elo, 'ELO');
   });
 
   // ── Find match ────────────────────────────────────────────

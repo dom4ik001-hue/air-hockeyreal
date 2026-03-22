@@ -77,5 +77,5 @@ module.exports = {
   createUser, findUserById, findUserByUsername,
   updateUser, getTopUsers, createMatch,
   getAllUsers: () => Array.from(users.values()),
-  restoreUser: (user) => { users.set(user._id, user); },
+  restoreUser: (user) => { users.set(user._id, user); return user; },
 };
