@@ -9,16 +9,17 @@ const listeners = {};
 /** Initialize and connect socket */
 export function connectSocket() {
   if (socket && socket.connected) return socket;
+  // If socket exists but disconnected — reconnect it
+  if (socket) {
+    socket.connect();
+    return socket;
+  }
 
-  // io() is loaded from Socket.io CDN script tag (added dynamically)
   socket = window.io({ transports: ['websocket', 'polling'] });
 
   socket.on('connect', () => {
     console.log('[Socket] Connected:', socket.id);
     _emit('_connected', null);
-    // Auto-authenticate if token exists
-    const token = localStorage.getItem('ah_token');
-    if (token) socket.emit('authenticate', { token });
   });
 
   socket.on('disconnect', reason => {
