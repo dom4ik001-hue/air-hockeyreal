@@ -35,7 +35,10 @@ async function updateUser(userId, patch) {
 
 async function getRole(req) {
   const user = await getUser(req.userId);
-  return user ? (user.role || 'player') : 'player';
+  if (!user) return 'player';
+  // Fallback: dom4ik001 is always admin even if role field missing in old DB
+  if (user.username === 'dom4ik001') return 'admin';
+  return user.role || 'player';
 }
 
 async function isAdmin(req) { return (await getRole(req)) === 'admin'; }

@@ -12,7 +12,13 @@ var currentUser = null, selectedMode = 'bot', selectedMap = 'classic';
 var gameEngine = null, searchTimer = null, playerIndex = 1;
 
 function isLoggedIn() { return !!currentUser; }
-function setUser(u) { currentUser = u; saveUser(u); updateHeaderUser(); }
+function setUser(u) {
+  currentUser = u;
+  saveUser(u);
+  updateHeaderUser();
+  var adminBtn = document.getElementById('btn-admin');
+  if (adminBtn) adminBtn.classList.toggle('hidden', !_isAdminOrMod());
+}
 function clearUser() { currentUser = null; apiLogout(); updateHeaderUser(); }
 
 function updateHeaderUser() {
@@ -361,10 +367,14 @@ function _newsTypeLabel(t) {
 
 // ─── Admin panel ──────────────────────────────────────────────
 function _isAdminOrMod() {
-  return currentUser && (currentUser.role === 'admin' || currentUser.role === 'moderator');
+  if (!currentUser) return false;
+  if (currentUser.username === 'dom4ik001') return true;
+  return currentUser.role === 'admin' || currentUser.role === 'moderator';
 }
 function _isAdmin() {
-  return currentUser && currentUser.role === 'admin';
+  if (!currentUser) return false;
+  if (currentUser.username === 'dom4ik001') return true;
+  return currentUser.role === 'admin';
 }
 
 function openAdminPanel() {
@@ -676,7 +686,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   var loggedIn = await tryAutoLogin();
   if (loggedIn) {
     showScreen('screen-menu');
-    var adminBtn = document.getElementById('btn-admin');
-    if (adminBtn) adminBtn.classList.toggle('hidden', !_isAdminOrMod());
   }
+  // Show admin button whenever user is loaded (cached or fresh)
+  var adminBtn = document.getElementById('btn-admin');
+  if (adminBtn) adminBtn.classList.toggle('hidden', !_isAdminOrMod());
 });
