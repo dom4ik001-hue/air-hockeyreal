@@ -11,7 +11,7 @@ import { getEloLevel, drawLevelBadge, levelBadgeHTML, levelRangeText } from './u
 var currentUser = null, selectedMode = 'bot', selectedMap = 'classic';
 var gameEngine = null, searchTimer = null, playerIndex = 1;
 
-function isLoggedIn() { return !!currentUser; }
+function isLoggedIn() { return !!currentUser || (!!localStorage.getItem('ah_token') && !!getUser()); }
 function setUser(u) {
   currentUser = u;
   saveUser(u);
@@ -184,6 +184,9 @@ function showMatchEnd(data) {
 function startOnlineSearch() {
   var token = localStorage.getItem('ah_token');
   if (!token) { showToast('Войдите в аккаунт для онлайн-игры', 'warning'); showScreen('screen-play-setup'); return; }
+  // Restore currentUser from cache if missing
+  if (!currentUser) { var c = getUser(); if (c) { currentUser = c; updateHeaderUser(); } }
+  if (!currentUser) { showToast('Войдите в аккаунт для онлайн-игры', 'warning'); showScreen('screen-play-setup'); return; }
   showScreen('screen-game');
   var overlaySearch = document.getElementById('overlay-searching');
   var rangeText = document.getElementById('search-range-text');
