@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>АэроХоккей — Онлайн</title>
+  <link rel="stylesheet" href="/css/variables.css" />
+  <link rel="stylesheet" href="/css/reset.css" />
+  <link rel="stylesheet" href="/css/auth.css" />
+  <link rel="stylesheet" href="/css/menu.css" />
+  <link rel="stylesheet" href="/css/game.css" />
+  <link rel="stylesheet" href="/css/leaderboard.css" />
+</head>
+<body>
+
+  <!-- ===== TOAST ===== -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- ===== AUTH SCREEN ===== -->
+  <div id="screen-auth" class="screen active">
+    <div class="auth-bg-glow"></div>
+    <div class="auth-wrap">
+      <!-- Left: branding -->
+      <div class="auth-brand">
+        <div class="brand-puck">🏒</div>
+        <h1 class="brand-title">Аэро<span>Хоккей</span></h1>
+        <p class="brand-sub">Многопользовательская онлайн-игра</p>
+        <div class="brand-features">
+          <div class="brand-feat">🌐 Онлайн матчи</div>
+          <div class="brand-feat">📈 ELO рейтинг</div>
+          <div class="brand-feat">🏆 Таблица лидеров</div>
+          <div class="brand-feat">🤖 Игра с ботом</div>
+        </div>
+      </div>
+
+      <!-- Right: forms -->
+      <div class="auth-forms">
+        <div id="form-login" class="auth-card glass-panel">
+          <h2>🔑 Вход</h2>
+          <form id="login-form" novalidate>
+            <div class="form-group">
+              <label for="login-username">👤 Никнейм</label>
+              <input type="text" id="login-username" placeholder="Ваш никнейм" autocomplete="username" maxlength="16" />
+              <span class="field-error" id="login-username-error"></span>
+            </div>
+            <div class="form-group">
+              <label for="login-password">🔒 Пароль</label>
+              <input type="password" id="login-password" placeholder="Ваш пароль" autocomplete="current-password" />
+              <span class="field-error" id="login-password-error"></span>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">🔑 Войти</button>
+          </form>
+          <p class="auth-switch">Нет аккаунта? <a href="#" id="go-register">📝 Регистрация</a></p>
+        </div>
+
+        <div id="form-register" class="auth-card glass-panel hidden">
+          <h2>📝 Регистрация</h2>
+          <form id="register-form" novalidate>
+            <div class="form-group">
+              <label for="reg-username">👤 Никнейм</label>
+              <input type="text" id="reg-username" placeholder="3–16 символов" maxlength="16" />
+              <span class="field-error" id="reg-username-error"></span>
+            </div>
+            <div class="form-group">
+              <label for="reg-password">🔒 Пароль</label>
+              <input type="password" id="reg-password" placeholder="Минимум 6 символов" />
+              <span class="field-error" id="reg-password-error"></span>
+            </div>
+            <div class="form-group">
+              <label for="reg-password2">🔒 Повтор пароля</label>
+              <input type="password" id="reg-password2" placeholder="Повторите пароль" />
+              <span class="field-error" id="reg-password2-error"></span>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">📝 Создать аккаунт</button>
+          </form>
+          <p class="auth-switch">Уже есть аккаунт? <a href="#" id="go-login">🔑 Войти</a></p>
+        </div>
+
+        <button id="btn-guest" class="btn btn-ghost btn-full">👻 Играть как гость</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MAIN MENU (горизонтальный layout) ===== -->
+  <div id="screen-menu" class="screen hidden">
+    <div class="menu-bg-glow"></div>
+
+    <!-- Top header -->
+    <header class="menu-header glass-panel">
+      <div class="header-logo">🏒 <span>АэроХоккей</span></div>
+      <div class="header-user">
+        <span class="user-avatar">👤</span>
+        <span id="header-username">Гость</span>
+        <span class="user-elo" id="header-elo">📈 1000</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-icon-only" id="btn-profile"  title="Профиль">👤</button>
+        <button class="btn btn-icon-only" id="btn-settings" title="Настройки">⚙️</button>
+        <button class="btn btn-icon-only btn-danger" id="btn-logout" title="Выход">🚪</button>
+      </div>
+    </header>
+
+    <!-- Horizontal main area -->
+    <div class="menu-body">
+
+      <!-- Left: big PLAY button + quick stats -->
+      <div class="menu-left">
+        <div class="play-hero glass-panel">
+          <div class="play-hero-icon">🏒</div>
+          <h2 class="play-hero-title">Готов играть?</h2>
+          <p class="play-hero-sub">Выбери режим и карту</p>
+          <button class="btn btn-play-big" id="btn-open-play">
+            ▶ ИГРАТЬ
+          </button>
+        </div>
+        <div class="quick-stats glass-panel" id="quick-stats">
+          <div class="qs-item">
+            <span class="qs-icon">📈</span>
+            <span class="qs-label">ELO</span>
+            <span class="qs-val" id="qs-elo">1000</span>
+          </div>
+          <div class="qs-item">
+            <span class="qs-icon">🎮</span>
+            <span class="qs-label">Матчей</span>
+            <span class="qs-val" id="qs-matches">0</span>
+          </div>
+          <div class="qs-item">
+            <span class="qs-icon">📊</span>
+            <span class="qs-label">Винрейт</span>
+            <span class="qs-val" id="qs-winrate">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: secondary actions -->
+      <div class="menu-right">
+        <button class="side-card glass-panel" id="btn-leaderboard">
+          <span class="side-icon">🏆</span>
+          <div class="side-text">
+            <span class="side-title">Таблица лидеров</span>
+            <span class="side-desc">Мировой топ-100</span>
+          </div>
+          <span class="side-arrow">›</span>
+        </button>
+        <button class="side-card glass-panel" id="btn-profile-side">
+          <span class="side-icon">👤</span>
+          <div class="side-text">
+            <span class="side-title">Мой профиль</span>
+            <span class="side-desc">Статистика и достижения</span>
+          </div>
+          <span class="side-arrow">›</span>
+        </button>
+        <button class="side-card glass-panel" id="btn-settings-side">
+          <span class="side-icon">⚙️</span>
+          <div class="side-text">
+            <span class="side-title">Настройки</span>
+            <span class="side-desc">Звук, графика, управление</span>
+          </div>
+          <span class="side-arrow">›</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PLAY SETUP SCREEN (режим + карта) ===== -->
+  <div id="screen-play-setup" class="screen hidden">
+    <div class="setup-bg-glow"></div>
+    <div class="setup-container">
+
+      <div class="setup-header">
+        <button class="btn btn-ghost btn-back" id="btn-setup-back">← Назад</button>
+        <h2 class="setup-title">🎮 Выбор режима и карты</h2>
+      </div>
+
+      <div class="setup-body">
+
+        <!-- Step 1: Mode -->
+        <div class="setup-section">
+          <h3 class="setup-section-title">1. Режим игры</h3>
+          <div class="mode-grid">
+            <button class="mode-card glass-panel active" data-mode="bot">
+              <span class="mode-icon">🤖</span>
+              <span class="mode-name">Против бота</span>
+              <span class="mode-desc">Тренировка, без ELO</span>
+            </button>
+            <button class="mode-card glass-panel" data-mode="local">
+              <span class="mode-icon">👥</span>
+              <span class="mode-name">Локальный</span>
+              <span class="mode-desc">2 игрока, 1 устройство</span>
+            </button>
+            <button class="mode-card glass-panel" data-mode="online">
+              <span class="mode-icon">🌐</span>
+              <span class="mode-name">Онлайн</span>
+              <span class="mode-desc">Рейтинговый матч</span>
+              <span class="mode-badge">ELO</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Map -->
+        <div class="setup-section">
+          <h3 class="setup-section-title">2. Карта</h3>
+          <div class="map-grid">
+
+            <button class="map-card glass-panel active" data-map="classic">
+              <canvas class="map-preview" width="80" height="160" data-map="classic"></canvas>
+              <span class="map-name">Классика</span>
+              <span class="map-desc">Стандартное поле</span>
+            </button>
+
+            <button class="map-card glass-panel" data-map="neon">
+              <canvas class="map-preview" width="80" height="160" data-map="neon"></canvas>
+              <span class="map-name">Неон</span>
+              <span class="map-desc">Яркие цвета</span>
+            </button>
+
+            <button class="map-card glass-panel" data-map="ice">
+              <canvas class="map-preview" width="80" height="160" data-map="ice"></canvas>
+              <span class="map-name">Лёд</span>
+              <span class="map-desc">Скользкое поле</span>
+            </button>
+
+            <button class="map-card glass-panel" data-map="fire">
+              <canvas class="map-preview" width="80" height="160" data-map="fire"></canvas>
+              <span class="map-name">Огонь</span>
+              <span class="map-desc">Быстрая шайба</span>
+            </button>
+
+            <button class="map-card glass-panel" data-map="forest">
+              <canvas class="map-preview" width="80" height="160" data-map="forest"></canvas>
+              <span class="map-name">Лес</span>
+              <span class="map-desc">Зелёное поле</span>
+            </button>
+
+            <button class="map-card glass-panel" data-map="mini">
+              <canvas class="map-preview" width="80" height="160" data-map="mini"></canvas>
+              <span class="map-name">Мини</span>
+              <span class="map-desc">Маленькие ворота</span>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Start button -->
+        <div class="setup-footer">
+          <button class="btn btn-start-game" id="btn-start-game">
+            ▶ Начать игру
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== GAME SCREEN ===== -->
+  <div id="screen-game" class="screen hidden">
+    <div class="game-hud">
+      <div class="hud-player hud-player-left glass-panel">
+        <span class="hud-avatar">👤</span>
+        <span class="hud-name" id="hud-p1-name">Игрок 1</span>
+        <span class="hud-elo"  id="hud-p1-elo">1000</span>
+      </div>
+      <div class="hud-center glass-panel">
+        <div class="hud-score">
+          <span id="hud-score-p1">0</span>
+          <span class="hud-score-sep">:</span>
+          <span id="hud-score-p2">0</span>
+        </div>
+        <div class="hud-map-badge" id="hud-map-badge">Классика</div>
+      </div>
+      <div class="hud-player hud-player-right glass-panel">
+        <span class="hud-elo"  id="hud-p2-elo">1000</span>
+        <span class="hud-name" id="hud-p2-name">Игрок 2</span>
+        <span class="hud-avatar">👤</span>
+      </div>
+    </div>
+
+    <div class="canvas-wrapper">
+      <canvas id="game-canvas"></canvas>
+      <div class="controls-hint hidden" id="controls-hint"></div>
+
+      <div class="game-overlay hidden" id="overlay-countdown">
+        <div class="countdown-number" id="countdown-text">3</div>
+      </div>
+      <div class="game-overlay hidden" id="overlay-goal">
+        <div class="goal-text">⚽ ГОЛ!</div>
+        <div class="goal-scorer" id="goal-scorer-name"></div>
+      </div>
+      <div class="game-overlay hidden" id="overlay-searching">
+        <div class="searching-content glass-panel">
+          <div class="spinner">⏳</div>
+          <p>Поиск соперника...</p>
+          <p class="search-range" id="search-range-text">Диапазон ELO: ±200</p>
+          <p class="search-time"  id="search-time-text">0 сек.</p>
+          <button class="btn btn-danger" id="btn-cancel-search">✖ Отменить</button>
+        </div>
+      </div>
+      <div class="game-overlay hidden" id="overlay-match-end">
+        <div class="match-end-content glass-panel">
+          <div class="match-end-icon"  id="match-end-icon">🏆</div>
+          <h2 id="match-end-title">Победа!</h2>
+          <div class="match-end-score" id="match-end-score">7 : 3</div>
+          <div class="elo-change"      id="elo-change-display"></div>
+          <div class="match-end-buttons">
+            <button class="btn btn-primary" id="btn-play-again">🔄 Ещё раз</button>
+            <button class="btn btn-ghost"   id="btn-back-menu">🏠 В меню</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-ghost btn-back-game" id="btn-game-back">← Меню</button>
+  </div>
+
+  <!-- ===== LEADERBOARD MODAL ===== -->
+  <div id="modal-leaderboard" class="modal-overlay hidden">
+    <div class="modal-content glass-panel leaderboard-modal">
+      <div class="modal-header">
+        <h2>🏆 Таблица лидеров</h2>
+        <button class="btn btn-icon-only modal-close" id="close-leaderboard">✖</button>
+      </div>
+      <div class="leaderboard-table-header">
+        <span>🏅 Место</span><span>👤 Игрок</span><span>📈 ELO</span><span>📊 Винрейт</span>
+      </div>
+      <div class="leaderboard-list" id="leaderboard-list">
+        <div class="leaderboard-loading">⏳ Загрузка...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PROFILE MODAL ===== -->
+  <div id="modal-profile" class="modal-overlay hidden">
+    <div class="modal-content glass-panel profile-modal">
+      <div class="modal-header">
+        <h2>👤 Профиль</h2>
+        <button class="btn btn-icon-only modal-close" id="close-profile">✖</button>
+      </div>
+      <div class="profile-body">
+        <div class="profile-avatar-big">👤</div>
+        <h3 id="profile-username">—</h3>
+        <div class="profile-stats">
+          <div class="stat-card glass-panel"><span class="stat-icon">📈</span><span class="stat-label">ELO</span><span class="stat-value" id="profile-elo">—</span></div>
+          <div class="stat-card glass-panel"><span class="stat-icon">🎮</span><span class="stat-label">Матчей</span><span class="stat-value" id="profile-matches">—</span></div>
+          <div class="stat-card glass-panel"><span class="stat-icon">🏆</span><span class="stat-label">Побед</span><span class="stat-value" id="profile-wins">—</span></div>
+          <div class="stat-card glass-panel"><span class="stat-icon">📊</span><span class="stat-label">Винрейт</span><span class="stat-value" id="profile-winrate">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SETTINGS MODAL ===== -->
+  <div id="modal-settings" class="modal-overlay hidden">
+    <div class="modal-content glass-panel settings-modal">
+      <div class="modal-header">
+        <h2>⚙️ Настройки</h2>
+        <button class="btn btn-icon-only modal-close" id="close-settings">✖</button>
+      </div>
+      <div class="settings-body">
+        <div class="setting-row">
+          <label>🔊 Звук</label>
+          <label class="toggle-switch"><input type="checkbox" id="setting-sound" checked /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <label>✨ Частицы</label>
+          <label class="toggle-switch"><input type="checkbox" id="setting-particles" checked /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <label>🎨 Цвет биты</label>
+          <input type="color" id="setting-mallet-color" value="#3b82f6" class="color-picker" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

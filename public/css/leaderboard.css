@@ -1,0 +1,105 @@
+/* ============================================
+   LEADERBOARD STYLES
+   ============================================ */
+.leaderboard-modal {
+  max-width: 640px;
+  max-height: 80vh;
+}
+
+.leaderboard-table-header {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px 100px;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--glass-border);
+  flex-shrink: 0;
+}
+
+.leaderboard-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-sm) 0;
+}
+
+.leaderboard-loading {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px 100px;
+  gap: var(--space-sm);
+  align-items: center;
+  padding: 10px var(--space-lg);
+  font-size: 14px;
+  transition: background var(--transition);
+  border-radius: var(--radius-sm);
+  margin: 0 var(--space-sm);
+}
+.leaderboard-row:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+/* Rank column */
+.lb-rank {
+  font-weight: 700;
+  font-size: 15px;
+  text-align: center;
+}
+.lb-rank.rank-1 { color: var(--gold);   font-size: 18px; }
+.lb-rank.rank-2 { color: var(--silver); font-size: 17px; }
+.lb-rank.rank-3 { color: var(--bronze); font-size: 16px; }
+
+/* Name column */
+.lb-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lb-name.rank-1 { color: var(--gold); }
+.lb-name.rank-2 { color: var(--silver); }
+.lb-name.rank-3 { color: var(--bronze); }
+
+/* ELO column */
+.lb-elo {
+  font-weight: 700;
+  color: var(--accent-color);
+  text-align: right;
+}
+
+/* Winrate column */
+.lb-winrate {
+  text-align: right;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* Current user highlight */
+.leaderboard-row.is-me {
+  background: rgba(59,130,246,0.08);
+  border: 1px solid rgba(59,130,246,0.2);
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+  .leaderboard-table-header,
+  .leaderboard-row {
+    grid-template-columns: 50px 1fr 80px;
+  }
+  .lb-winrate,
+  .leaderboard-table-header span:last-child {
+    display: none;
+  }
+}

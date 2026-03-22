@@ -1,0 +1,46 @@
+/* ============================================
+   CSS VARIABLES — Design Tokens
+   ============================================ */
+:root {
+  /* Colors */
+  --bg-main:        #0a0a0c;
+  --bg-panel:       rgba(25, 25, 30, 0.6);
+  --text-primary:   #f0f0f5;
+  --text-secondary: #8a8a93;
+  --accent-color:   #3b82f6;
+  --accent-hover:   #2563eb;
+  --danger:         #ef4444;
+  --danger-hover:   #dc2626;
+  --success:        #10b981;
+  --warning:        #f59e0b;
+
+  /* Glass */
+  --glass-border:   rgba(255, 255, 255, 0.05);
+  --glass-shadow:   0 4px 30px rgba(0, 0, 0, 0.5);
+  --glass-blur:     blur(12px);
+
+  /* Leaderboard ranks */
+  --gold:   #fbbf24;
+  --silver: #9ca3af;
+  --bronze: #b45309;
+
+  /* Spacing */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  24px;
+  --space-xl:  40px;
+
+  /* Border radius */
+  --radius-sm:  6px;
+  --radius-md:  12px;
+  --radius-lg:  20px;
+  --radius-xl:  32px;
+
+  /* Transitions */
+  --transition: 0.3s ease;
+
+  /* Font */
+  --font-main: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Courier New', monospace;
+}
