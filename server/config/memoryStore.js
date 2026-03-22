@@ -10,7 +10,7 @@ const matches = [];
 
 // ─── User operations ─────────────────────────────────────────
 
-function createUser({ username, password_hash }) {
+function createUser({ username, password_hash, role }) {
   const user = {
     _id:            uuidv4(),
     username,
@@ -19,6 +19,9 @@ function createUser({ username, password_hash }) {
     matches_played: 0,
     matches_won:    0,
     matches_lost:   0,
+    role:           role || 'player',
+    banned:         false,
+    banned_reason:  '',
     created_at:     new Date()
   };
   users.set(user._id, user);

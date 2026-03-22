@@ -39,6 +39,19 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  role: {
+    type: String,
+    enum: ['player', 'moderator', 'admin'],
+    default: 'player'
+  },
+  banned: {
+    type: Boolean,
+    default: false
+  },
+  banned_reason: {
+    type: String,
+    default: ''
+  },
   created_at: {
     type: Date,
     default: Date.now

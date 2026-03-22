@@ -362,7 +362,13 @@
         <button class="btn btn-icon-only modal-close" id="close-profile">✖</button>
       </div>
       <div class="profile-body">
-        <div class="profile-avatar-big">👤</div>
+        <div class="profile-level-wrap">
+          <canvas id="profile-level-canvas" width="72" height="72"></canvas>
+          <div class="profile-level-info">
+            <span id="profile-level-text">Уровень 4</span>
+            <span id="profile-level-range" style="font-size:11px;color:var(--text-secondary)">901–1050</span>
+          </div>
+        </div>
         <h3 id="profile-username">—</h3>
         <div class="profile-stats">
           <div class="stat-card glass-panel"><span class="stat-icon">📈</span><span class="stat-label">ELO</span><span class="stat-value" id="profile-elo">—</span></div>
@@ -409,15 +415,16 @@
   <div id="modal-admin" class="modal-overlay hidden">
     <div class="modal-content glass-panel admin-modal">
       <div class="modal-header">
-        <h2>🛡️ Админ панель</h2>
+        <h2>🛡️ Панель управления</h2>
         <button class="btn btn-icon-only modal-close" id="close-admin">✖</button>
       </div>
 
-      <!-- Tabs -->
       <div class="admin-tabs">
         <button class="admin-tab active" data-tab="news">📢 Новости</button>
-        <button class="admin-tab" data-tab="game">🎮 Игра</button>
-        <button class="admin-tab" data-tab="stats">📊 Статистика</button>
+        <button class="admin-tab" data-tab="players">👥 Игроки</button>
+        <button class="admin-tab" data-tab="matches">🎮 Матчи</button>
+        <button class="admin-tab" data-tab="game">⚙️ Сервер</button>
+        <button class="admin-tab" data-tab="stats">📊 Стат.</button>
       </div>
 
       <!-- Tab: News -->
@@ -425,7 +432,6 @@
         <h3>Опубликовать новость</h3>
         <form id="admin-news-form">
           <div class="form-group">
-            <label>Тип</label>
             <select id="admin-news-type" class="setting-select" style="width:100%">
               <option value="news">📢 Новость</option>
               <option value="update">🚀 Обновление</option>
@@ -434,72 +440,90 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Текст</label>
-            <textarea id="admin-news-text" rows="3" placeholder="Текст новости..." style="background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:10px;color:var(--text-primary);width:100%;resize:vertical;font-family:inherit"></textarea>
+            <textarea id="admin-news-text" rows="3" placeholder="Текст новости..." class="admin-textarea"></textarea>
           </div>
           <button type="submit" class="btn btn-primary btn-full">📢 Опубликовать</button>
         </form>
-        <hr style="border-color:var(--glass-border);margin:16px 0">
-        <h3>Удалить новость</h3>
+        <hr class="admin-hr">
+        <h3>Удалить новость по ID</h3>
         <div style="display:flex;gap:8px">
-          <input id="admin-delete-id" type="text" placeholder="ID новости" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:8px;color:var(--text-primary)" />
-          <button class="btn btn-danger" id="admin-news-delete">🗑️ Удалить</button>
+          <input id="admin-delete-id" type="text" placeholder="ID новости" class="admin-input" style="flex:1" />
+          <button class="btn btn-danger" id="admin-news-delete">🗑️</button>
         </div>
       </div>
 
-      <!-- Tab: Game -->
-      <div class="admin-body admin-tab-content hidden" id="admin-tab-game">
-        <h3>Режим обслуживания</h3>
-        <div class="admin-control-row">
-          <span>🔧 Тех. перерыв</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="admin-maintenance-toggle" />
-            <span class="toggle-slider"></span>
-          </label>
+      <!-- Tab: Players -->
+      <div class="admin-body admin-tab-content hidden" id="admin-tab-players">
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <input id="admin-player-search" type="text" placeholder="Поиск игрока..." class="admin-input" style="flex:1" />
+          <button class="btn btn-ghost" id="admin-players-load">🔄</button>
+        </div>
+        <div id="admin-players-list" class="admin-scroll-list">
+          <div class="admin-empty">Нажмите 🔄 для загрузки</div>
+        </div>
+        <hr class="admin-hr">
+        <h3>Действия с игроком</h3>
+        <div class="form-group">
+          <input id="admin-action-username" type="text" placeholder="Никнейм" class="admin-input" style="width:100%" />
+        </div>
+        <div class="admin-actions-grid">
+          <button class="btn btn-danger" id="admin-ban-btn">🚫 Бан</button>
+          <button class="btn btn-primary" id="admin-unban-btn">✅ Разбан</button>
+          <button class="btn btn-ghost" id="admin-mod-btn" data-admin-only>🛡️ Модератор</button>
+          <button class="btn btn-ghost" id="admin-unmod-btn" data-admin-only>👤 Снять мод.</button>
         </div>
         <div class="form-group" style="margin-top:10px">
-          <label>Сообщение игрокам</label>
-          <input id="admin-maintenance-msg" type="text" placeholder="Сервер на тех. обслуживании..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:8px;color:var(--text-primary)" />
+          <input id="admin-ban-reason" type="text" placeholder="Причина бана (необязательно)" class="admin-input" style="width:100%" />
         </div>
+        <hr class="admin-hr">
+        <h3 data-admin-only>Управление ELO</h3>
+        <div class="admin-elo-row" data-admin-only>
+          <input id="admin-elo-username" type="text" placeholder="Никнейм" class="admin-input" style="flex:1" />
+          <input id="admin-elo-amount" type="number" placeholder="Кол-во" class="admin-input" style="width:80px" />
+          <select id="admin-elo-mode" class="setting-select">
+            <option value="add">+/−</option>
+            <option value="set">= Установить</option>
+          </select>
+          <button class="btn btn-primary" id="admin-elo-btn">💾</button>
+        </div>
+      </div>
+
+      <!-- Tab: Matches -->
+      <div class="admin-body admin-tab-content hidden" id="admin-tab-matches">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <h3 style="margin:0">Активные матчи</h3>
+          <button class="btn btn-ghost" id="admin-matches-refresh">🔄 Обновить</button>
+        </div>
+        <div id="admin-matches-list" class="admin-scroll-list">
+          <div class="admin-empty">Нет активных матчей</div>
+        </div>
+      </div>
+
+      <!-- Tab: Game/Server -->
+      <div class="admin-body admin-tab-content hidden" id="admin-tab-game">
+        <h3>Тех. перерыв</h3>
+        <div class="admin-control-row">
+          <span>🔧 Включить тех. перерыв</span>
+          <label class="toggle-switch"><input type="checkbox" id="admin-maintenance-toggle" /><span class="toggle-slider"></span></label>
+        </div>
+        <input id="admin-maintenance-msg" type="text" placeholder="Сообщение игрокам..." class="admin-input" style="width:100%;margin-top:8px" />
         <button class="btn btn-primary btn-full" id="admin-maintenance-save" style="margin-top:8px">💾 Сохранить</button>
-
-        <hr style="border-color:var(--glass-border);margin:16px 0">
-
+        <hr class="admin-hr">
         <h3>Онлайн-игра</h3>
         <div class="admin-control-row">
-          <span>🌐 Онлайн матчи</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="admin-online-toggle" checked />
-            <span class="toggle-slider"></span>
-          </label>
+          <span>🌐 Онлайн матчи разрешены</span>
+          <label class="toggle-switch"><input type="checkbox" id="admin-online-toggle" checked /><span class="toggle-slider"></span></label>
         </div>
         <button class="btn btn-primary btn-full" id="admin-online-save" style="margin-top:10px">💾 Сохранить</button>
       </div>
 
       <!-- Tab: Stats -->
       <div class="admin-body admin-tab-content hidden" id="admin-tab-stats">
-        <h3>Статистика сервера</h3>
-        <div class="admin-stats-grid" id="admin-stats-grid">
-          <div class="admin-stat-card glass-panel">
-            <span class="admin-stat-icon">👥</span>
-            <span class="admin-stat-label">Игроков</span>
-            <span class="admin-stat-val" id="stat-users">—</span>
-          </div>
-          <div class="admin-stat-card glass-panel">
-            <span class="admin-stat-icon">📢</span>
-            <span class="admin-stat-label">Новостей</span>
-            <span class="admin-stat-val" id="stat-news">—</span>
-          </div>
-          <div class="admin-stat-card glass-panel">
-            <span class="admin-stat-icon">⏱️</span>
-            <span class="admin-stat-label">Аптайм</span>
-            <span class="admin-stat-val" id="stat-uptime">—</span>
-          </div>
-          <div class="admin-stat-card glass-panel">
-            <span class="admin-stat-icon">🗄️</span>
-            <span class="admin-stat-label">База данных</span>
-            <span class="admin-stat-val" id="stat-db">—</span>
-          </div>
+        <div class="admin-stats-grid">
+          <div class="admin-stat-card glass-panel"><span class="admin-stat-icon">👥</span><span class="admin-stat-label">Игроков</span><span class="admin-stat-val" id="stat-users">—</span></div>
+          <div class="admin-stat-card glass-panel"><span class="admin-stat-icon">📢</span><span class="admin-stat-label">Новостей</span><span class="admin-stat-val" id="stat-news">—</span></div>
+          <div class="admin-stat-card glass-panel"><span class="admin-stat-icon">⏱️</span><span class="admin-stat-label">Аптайм</span><span class="admin-stat-val" id="stat-uptime">—</span></div>
+          <div class="admin-stat-card glass-panel"><span class="admin-stat-icon">🗄️</span><span class="admin-stat-label">База</span><span class="admin-stat-val" id="stat-db">—</span></div>
         </div>
         <button class="btn btn-ghost btn-full" id="admin-stats-refresh" style="margin-top:12px">🔄 Обновить</button>
       </div>

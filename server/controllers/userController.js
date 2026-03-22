@@ -23,6 +23,8 @@ async function getProfile(req, res) {
       matches_played: user.matches_played,
       matches_won:    user.matches_won,
       matches_lost:   user.matches_lost,
+      role:           user.role || 'player',
+      banned:         !!user.banned,
       created_at:     user.created_at
     });
   } catch (err) {

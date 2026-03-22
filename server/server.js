@@ -15,7 +15,7 @@ const authRoutes         = require('./routes/authRoutes');
 const apiRoutes          = require('./routes/apiRoutes');
 const newsRoutes         = require('./routes/newsRoutes');
 const { joinQueue, leaveQueue, startMatchmaking } = require('./game/matchmaker');
-const { handlePlayerInput, handleDisconnect, getPlayerIndex } = require('./game/roomManager');
+const { handlePlayerInput, handleDisconnect, getPlayerIndex, getActiveRooms } = require('./game/roomManager');
 const User = require('./models/User');
 
 const app    = express();
@@ -96,13 +96,15 @@ io.on('connection', socket => {
         user = mem.findUserById(payload.sub);
       }
       if (!user) { socket.emit('auth_error', { message: 'Пользователь не найден' }); return; }
+      if (user.banned) { socket.emit('auth_error', { message: '🚫 Вы заблокированы' + (user.banned_reason ? ': ' + user.banned_reason : '') }); return; }
 
       socketUsers.set(socket.id, {
         userId:   user._id,
         username: user.username,
-        elo:      user.elo_rating
+        elo:      user.elo_rating,
+        role:     user.role || 'player',
       });
-      socket.emit('authenticated', { username: user.username, elo: user.elo_rating });
+      socket.emit('authenticated', { username: user.username, elo: user.elo_rating, role: user.role || 'player' });
       console.log('[Socket] Auth:', user.username, user.elo_rating, 'ELO');
     } catch {
       socket.emit('auth_error', { message: 'Недействительный токен' });

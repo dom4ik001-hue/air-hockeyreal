@@ -6,6 +6,7 @@ import { GameEngine } from './core/engine.js';
 import { drawMapPreview, MAP_CONFIGS } from './entities/board.js';
 import { apiLogin, apiRegister, apiGetProfile, apiGetLeaderboard, apiLogout, saveUser, getUser, isLoggedIn as apiIsLoggedIn } from './network/api.js';
 import { connectSocket, socketAuthenticate, socketFindMatch, socketCancelSearch, socketSendInput, socketLeaveMatch, onSocketEvent, offSocketEvent } from './network/socket-client.js';
+import { getEloLevel, drawLevelBadge, levelBadgeHTML, levelRangeText } from './ui/eloLevel.js';
 
 var currentUser = null, selectedMode = 'bot', selectedMap = 'classic';
 var gameEngine = null, searchTimer = null, playerIndex = 1;
@@ -21,7 +22,7 @@ function updateHeaderUser() {
   var w = currentUser ? (currentUser.matches_won || 0) : 0;
   var wr = m > 0 ? Math.round((w / m) * 100) + '%' : '—';
   document.getElementById('header-username').textContent = name;
-  document.getElementById('header-elo').textContent = '📈 ' + elo;
+  document.getElementById('header-elo').textContent = '📈 ' + elo + '  ' + levelRangeText(elo);
   document.getElementById('qs-elo').textContent = elo;
   document.getElementById('qs-matches').textContent = m;
   document.getElementById('qs-winrate').textContent = wr;
@@ -293,7 +294,7 @@ async function openLeaderboard() {
       var wr = (u.winrate != null) ? u.winrate + '%' : '—';
       html += '<div class="leaderboard-row' + me + '">' +
         '<span class="lb-rank">' + u.rank + '</span>' +
-        '<span class="lb-name">' + esc(u.username) + '</span>' +
+        '<span class="lb-name">' + levelBadgeHTML(u.elo) + ' ' + esc(u.username) + '</span>' +
         '<span class="lb-elo">' + u.elo + '</span>' +
         '<span class="lb-wr">' + wr + '</span>' +
         '</div>';
@@ -305,12 +306,21 @@ async function openLeaderboard() {
 function openProfileModal() {
   if (!isLoggedIn()) { showToast('Войдите для просмотра профиля', 'warning'); return; }
   var u = currentUser;
+  var elo = u.elo_rating || 1000;
   document.getElementById('profile-username').textContent = u.username;
-  document.getElementById('profile-elo').textContent = u.elo_rating || 1000;
+  document.getElementById('profile-elo').textContent = elo;
   document.getElementById('profile-matches').textContent = u.matches_played || 0;
   document.getElementById('profile-wins').textContent = u.matches_won || 0;
   var wr = u.matches_played > 0 ? Math.round((u.matches_won / u.matches_played) * 100) + '%' : '—';
   document.getElementById('profile-winrate').textContent = wr;
+  // ELO level badge
+  var lvl = getEloLevel(elo);
+  var canvas = document.getElementById('profile-level-canvas');
+  if (canvas) drawLevelBadge(canvas, elo);
+  var lvlText = document.getElementById('profile-level-text');
+  if (lvlText) lvlText.textContent = 'Уровень ' + lvl.level;
+  var lvlRange = document.getElementById('profile-level-range');
+  if (lvlRange) lvlRange.textContent = lvl.min + ' – ' + (lvl.max === Infinity ? '∞' : lvl.max) + ' ELO';
   openModal('modal-profile');
 }
 
@@ -350,9 +360,20 @@ function _newsTypeLabel(t) {
 }
 
 // ─── Admin panel ──────────────────────────────────────────────
+function _isAdminOrMod() {
+  return currentUser && (currentUser.role === 'admin' || currentUser.role === 'moderator');
+}
+function _isAdmin() {
+  return currentUser && currentUser.role === 'admin';
+}
+
 function openAdminPanel() {
-  if (!currentUser || currentUser.username !== 'dom4ik001') return;
+  if (!_isAdminOrMod()) return;
   openModal('modal-admin');
+  // Show/hide admin-only elements
+  document.querySelectorAll('[data-admin-only]').forEach(function(el) {
+    el.style.display = _isAdmin() ? '' : 'none';
+  });
   loadAdminStats();
 }
 
@@ -371,6 +392,7 @@ function bindAdminEvents() {
       document.getElementById('admin-tab-' + tab.dataset.tab).classList.remove('hidden');
       if (tab.dataset.tab === 'stats') loadAdminStats();
       if (tab.dataset.tab === 'game') loadAdminGameStatus();
+      if (tab.dataset.tab === 'matches') loadAdminMatches();
     });
   });
 
@@ -389,26 +411,114 @@ function bindAdminEvents() {
         body: JSON.stringify({ text: text, type: type })
       });
       document.getElementById('admin-news-text').value = '';
-      showToast('Новость опубликована!', 'success');
-      loadNews();
+      showToast('Новость опубликована!', 'success'); loadNews();
     } catch(e) { showToast('Ошибка публикации', 'error'); }
   });
 
-  // Delete news
   var delBtn = document.getElementById('admin-news-delete');
   if (delBtn) delBtn.addEventListener('click', async function() {
     var id = document.getElementById('admin-delete-id').value.trim();
     if (!id) return;
     try {
       var token = localStorage.getItem('ah_token');
-      await fetch('/api/admin/news/' + id, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
+      await fetch('/api/admin/news/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
       document.getElementById('admin-delete-id').value = '';
       showToast('Удалено', 'success'); loadNews();
     } catch(e) { showToast('Ошибка удаления', 'error'); }
   });
+
+  // Players load
+  var playersLoad = document.getElementById('admin-players-load');
+  if (playersLoad) playersLoad.addEventListener('click', loadAdminPlayers);
+  var playerSearch = document.getElementById('admin-player-search');
+  if (playerSearch) playerSearch.addEventListener('input', function() { filterAdminPlayers(playerSearch.value); });
+
+  // Ban/unban
+  document.getElementById('admin-ban-btn').addEventListener('click', async function() {
+    var username = document.getElementById('admin-action-username').value.trim();
+    var reason = document.getElementById('admin-ban-reason').value.trim();
+    if (!username) return;
+    try {
+      var token = localStorage.getItem('ah_token');
+      var r = await fetch('/api/admin/ban', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ username: username, banned: true, reason: reason })
+      });
+      var d = await r.json();
+      if (!r.ok) { showToast(d.message || 'Ошибка', 'error'); return; }
+      showToast('🚫 ' + username + ' заблокирован', 'success'); loadAdminPlayers();
+    } catch(e) { showToast('Ошибка', 'error'); }
+  });
+
+  document.getElementById('admin-unban-btn').addEventListener('click', async function() {
+    var username = document.getElementById('admin-action-username').value.trim();
+    if (!username) return;
+    try {
+      var token = localStorage.getItem('ah_token');
+      await fetch('/api/admin/ban', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ username: username, banned: false })
+      });
+      showToast('✅ ' + username + ' разблокирован', 'success'); loadAdminPlayers();
+    } catch(e) { showToast('Ошибка', 'error'); }
+  });
+
+  // Mod/unmod (admin only)
+  document.getElementById('admin-mod-btn').addEventListener('click', async function() {
+    var username = document.getElementById('admin-action-username').value.trim();
+    if (!username) return;
+    try {
+      var token = localStorage.getItem('ah_token');
+      var r = await fetch('/api/admin/role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ username: username, role: 'moderator' })
+      });
+      var d = await r.json();
+      if (!r.ok) { showToast(d.message || 'Ошибка', 'error'); return; }
+      showToast('🛡️ ' + username + ' — модератор', 'success'); loadAdminPlayers();
+    } catch(e) { showToast('Ошибка', 'error'); }
+  });
+
+  document.getElementById('admin-unmod-btn').addEventListener('click', async function() {
+    var username = document.getElementById('admin-action-username').value.trim();
+    if (!username) return;
+    try {
+      var token = localStorage.getItem('ah_token');
+      await fetch('/api/admin/role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ username: username, role: 'player' })
+      });
+      showToast('👤 Роль снята', 'success'); loadAdminPlayers();
+    } catch(e) { showToast('Ошибка', 'error'); }
+  });
+
+  // ELO management (admin only)
+  var eloBtn = document.getElementById('admin-elo-btn');
+  if (eloBtn) eloBtn.addEventListener('click', async function() {
+    var username = document.getElementById('admin-elo-username').value.trim();
+    var amount = parseInt(document.getElementById('admin-elo-amount').value);
+    var mode = document.getElementById('admin-elo-mode').value;
+    if (!username || isNaN(amount)) return;
+    try {
+      var token = localStorage.getItem('ah_token');
+      var r = await fetch('/api/admin/elo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ username: username, amount: amount, mode: mode })
+      });
+      var d = await r.json();
+      if (!r.ok) { showToast(d.message || 'Ошибка', 'error'); return; }
+      showToast('📈 ' + username + ' → ' + d.newElo + ' ELO', 'success'); loadAdminPlayers();
+    } catch(e) { showToast('Ошибка', 'error'); }
+  });
+
+  // Matches refresh
+  var matchRefresh = document.getElementById('admin-matches-refresh');
+  if (matchRefresh) matchRefresh.addEventListener('click', loadAdminMatches);
 
   // Maintenance save
   var maintSave = document.getElementById('admin-maintenance-save');
@@ -422,7 +532,7 @@ function bindAdminEvents() {
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         body: JSON.stringify({ enabled: enabled, message: message || undefined })
       });
-      showToast(enabled ? '🔧 Тех. перерыв включён' : '✅ Тех. перерыв выключен', 'success');
+      showToast(enabled ? '🔧 Тех. перерыв включён' : '✅ Выключен', 'success');
     } catch(e) { showToast('Ошибка', 'error'); }
   });
 
@@ -441,9 +551,73 @@ function bindAdminEvents() {
     } catch(e) { showToast('Ошибка', 'error'); }
   });
 
-  // Stats refresh
   var statsRefresh = document.getElementById('admin-stats-refresh');
   if (statsRefresh) statsRefresh.addEventListener('click', loadAdminStats);
+}
+
+var _adminPlayersCache = [];
+
+async function loadAdminPlayers() {
+  var list = document.getElementById('admin-players-list');
+  if (!list) return;
+  list.innerHTML = '<div class="admin-empty">Загрузка...</div>';
+  try {
+    var token = localStorage.getItem('ah_token');
+    var r = await fetch('/api/admin/players', { headers: { 'Authorization': 'Bearer ' + token } });
+    var data = await r.json();
+    _adminPlayersCache = Array.isArray(data) ? data : [];
+    renderAdminPlayers(_adminPlayersCache);
+  } catch(e) { list.innerHTML = '<div class="admin-empty">Ошибка загрузки</div>'; }
+}
+
+function filterAdminPlayers(q) {
+  var filtered = q ? _adminPlayersCache.filter(function(p) { return p.username.toLowerCase().includes(q.toLowerCase()); }) : _adminPlayersCache;
+  renderAdminPlayers(filtered);
+}
+
+function renderAdminPlayers(players) {
+  var list = document.getElementById('admin-players-list');
+  if (!list) return;
+  if (!players.length) { list.innerHTML = '<div class="admin-empty">Нет игроков</div>'; return; }
+  list.innerHTML = players.map(function(p) {
+    var roleClass = 'apr-' + (p.banned ? 'banned' : (p.role || 'player'));
+    var roleLabel = p.banned ? '🚫 Бан' : (p.role === 'admin' ? '👑 Адм' : p.role === 'moderator' ? '🛡️ Мод' : '👤');
+    return '<div class="admin-player-row" data-username="' + esc(p.username) + '">' +
+      '<span class="ape">' + levelBadgeHTML(p.elo) + '</span>' +
+      '<span class="apn">' + esc(p.username) + '</span>' +
+      '<span class="ape">' + p.elo + '</span>' +
+      '<span class="apr ' + roleClass + '">' + roleLabel + '</span>' +
+      '</div>';
+  }).join('');
+  // Click to fill action username
+  list.querySelectorAll('.admin-player-row').forEach(function(row) {
+    row.addEventListener('click', function() {
+      var u = row.dataset.username;
+      var inp = document.getElementById('admin-action-username');
+      var eloInp = document.getElementById('admin-elo-username');
+      if (inp) inp.value = u;
+      if (eloInp) eloInp.value = u;
+    });
+  });
+}
+
+async function loadAdminMatches() {
+  var list = document.getElementById('admin-matches-list');
+  if (!list) return;
+  list.innerHTML = '<div class="admin-empty">Загрузка...</div>';
+  try {
+    var token = localStorage.getItem('ah_token');
+    var r = await fetch('/api/admin/matches', { headers: { 'Authorization': 'Bearer ' + token } });
+    var data = await r.json();
+    if (!data.length) { list.innerHTML = '<div class="admin-empty">Нет активных матчей</div>'; return; }
+    list.innerHTML = data.map(function(m) {
+      return '<div class="admin-match-row">' +
+        '<span class="amn">' + levelBadgeHTML(m.p1.elo) + ' ' + esc(m.p1.username) + ' vs ' + levelBadgeHTML(m.p2.elo) + ' ' + esc(m.p2.username) + '</span>' +
+        '<span class="ams">' + m.p1.score + ':' + m.p2.score + '</span>' +
+        '<span style="font-size:10px;color:var(--text-secondary)">' + m.status + '</span>' +
+        '</div>';
+    }).join('');
+  } catch(e) { list.innerHTML = '<div class="admin-empty">Ошибка</div>'; }
 }
 
 async function loadAdminGameStatus() {
@@ -503,6 +677,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (loggedIn) {
     showScreen('screen-menu');
     var adminBtn = document.getElementById('btn-admin');
-    if (adminBtn) adminBtn.classList.toggle('hidden', currentUser.username !== 'dom4ik001');
+    if (adminBtn) adminBtn.classList.toggle('hidden', !_isAdminOrMod());
   }
 });

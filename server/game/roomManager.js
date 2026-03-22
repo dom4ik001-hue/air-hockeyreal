@@ -359,7 +359,20 @@ function getPlayerIndex(socketId) {
   return state.p1.socketId === socketId ? 1 : 2;
 }
 
+function getActiveRooms() {
+  const result = [];
+  for (const [roomId, state] of rooms.entries()) {
+    result.push({
+      roomId,
+      status: state.status,
+      p1: { username: state.p1.username, elo: state.p1.elo, score: state.p1.score },
+      p2: { username: state.p2.username, elo: state.p2.elo, score: state.p2.score },
+    });
+  }
+  return result;
+}
+
 module.exports = {
   createRoom, handlePlayerInput, handleDisconnect,
-  getRoomBySocket, getPlayerIndex
+  getRoomBySocket, getPlayerIndex, getActiveRooms
 };

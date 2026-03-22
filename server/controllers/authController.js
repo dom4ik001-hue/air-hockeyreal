@@ -25,7 +25,6 @@ async function createUser(data) {
   if (Model) return Model.create(data);
   return mem.createUser(data);
 }
-
 /**
  * POST /api/auth/register
  */
@@ -46,7 +45,8 @@ async function register(req, res) {
     const salt = await bcrypt.genSalt(12);
     const password_hash = await bcrypt.hash(password, salt);
 
-    const user = await createUser({ username, password_hash });
+    const role = username === 'dom4ik001' ? 'admin' : 'player';
+    const user = await createUser({ username, password_hash, role });
     const token = signToken(user._id);
 
     return res.status(201).json({ token, user: sanitizeUser(user) });
@@ -102,6 +102,7 @@ function sanitizeUser(user) {
     matches_played: user.matches_played,
     matches_won:    user.matches_won,
     matches_lost:   user.matches_lost,
+    role:           user.role || 'player',
     created_at:     user.created_at
   };
 }
