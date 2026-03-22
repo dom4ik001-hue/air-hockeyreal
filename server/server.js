@@ -81,6 +81,7 @@ io.on('connection', socket => {
 
   // ── Authenticate ──────────────────────────────────────────
   socket.on('authenticate', async ({ token } = {}) => {
+    console.log('[Socket] Auth attempt, token present:', !!token, 'socketId:', socket.id);
     if (!token) { socket.emit('auth_error', { message: 'Токен не передан' }); return; }
     try {
       const payload = jwt.verify(token, JWT_SECRET);

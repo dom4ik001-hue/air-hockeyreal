@@ -58,7 +58,11 @@ export function disconnectSocket() {
 // ─── Emit helpers ────────────────────────────────────────────
 
 export function socketAuthenticate(token) {
-  if (socket) socket.emit('authenticate', { token });
+  if (!socket) return;
+  // Small delay to ensure server-side socket handler is ready
+  setTimeout(function() {
+    if (socket) socket.emit('authenticate', { token });
+  }, 100);
 }
 
 export function socketFindMatch() {
