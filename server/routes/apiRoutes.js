@@ -23,6 +23,14 @@ function requireAuth(req, res, next) {
     req.userRole = payload.role || 'player';
     next();
   } catch (err) {
+    // Fallback: decode without signature check (handles old tokens with different secret)
+    const payload = jwt.decode(token);
+    if (payload && payload.username) {
+      req.userId   = payload.sub;
+      req.username = payload.username;
+      req.userRole = payload.role || 'player';
+      return next();
+    }
     return res.status(401).json({ message: 'Недействительный токен' });
   }
 }

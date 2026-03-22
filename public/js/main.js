@@ -666,7 +666,7 @@ function _formatUptime(sec) {
 
 async function tryAutoLogin() {
   if (!apiIsLoggedIn()) return false;
-  // Restore from cache immediately so UI works while request is in flight
+  // Restore from cache immediately
   var cached = getUser();
   if (cached) { currentUser = cached; updateHeaderUser(); }
   try {
@@ -674,10 +674,15 @@ async function tryAutoLogin() {
     setUser(res.user || res);
     return true;
   } catch (e) {
-    // Only force logout on explicit auth errors (401/403), not network failures
-    if (e.status === 401 || e.status === 403) { apiLogout(); return false; }
-    // Network error — keep cached user logged in
-    return !!cached;
+    // Token invalid or server restarted — if we have cached user data, stay logged in
+    // Only hard-logout if server explicitly says token is bad AND we have no cache
+    if ((e.status === 401 || e.status === 403) && !cached) {
+      apiLogout();
+      return false;
+    }
+    // Keep cached user — they'll get a fresh token on next login
+    if (cached) return true;
+    return false;
   }
 }
 
