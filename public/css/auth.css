@@ -17,39 +17,89 @@
   pointer-events: none;
 }
 
-.auth-container {
+.auth-container,
+.auth-wrap {
   width: 100%;
-  max-width: 420px;
+  max-width: 900px;
   padding: var(--space-md);
   display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
+  flex-direction: row;
+  gap: var(--space-xl);
   z-index: 1;
+  align-items: center;
+  justify-content: center;
 }
 
-.auth-logo {
+.auth-brand {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
   text-align: center;
-  padding: var(--space-md) 0;
+  padding: var(--space-xl);
 }
-.auth-logo .logo-icon {
-  font-size: 56px;
-  display: block;
-  margin-bottom: var(--space-sm);
-  filter: drop-shadow(0 0 20px rgba(59,130,246,0.6));
+
+.brand-puck {
+  font-size: 72px;
+  filter: drop-shadow(0 0 24px rgba(59,130,246,0.6));
+  animation: floatPuck 3s ease-in-out infinite;
 }
-.auth-logo h1 {
-  font-size: 32px;
+@keyframes floatPuck {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+
+.brand-title {
+  font-size: 36px;
   font-weight: 800;
   letter-spacing: -0.5px;
+}
+.brand-title span {
   background: linear-gradient(135deg, #fff 0%, var(--accent-color) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-.auth-logo .logo-sub {
+
+.brand-sub {
+  font-size: 14px;
   color: var(--text-secondary);
-  font-size: 13px;
-  margin-top: var(--space-xs);
+}
+
+.brand-features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+.brand-feat {
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: 6px 16px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--glass-border);
+}
+
+.auth-forms {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  max-width: 380px;
+}
+
+@media (max-width: 700px) {
+  .auth-wrap, .auth-container {
+    flex-direction: column;
+    max-width: 420px;
+  }
+  .auth-brand { padding: var(--space-md); }
+  .brand-puck { font-size: 48px; }
+  .brand-title { font-size: 26px; }
+  .brand-features { display: none; }
+  .auth-forms { max-width: none; width: 100%; }
 }
 
 .auth-card {

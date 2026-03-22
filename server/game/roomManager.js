@@ -9,12 +9,13 @@ const { isDbConnected } = require('../config/db');
 const mem = require('../config/memoryStore');
 
 // ─── Physics constants ────────────────────────────────────────
-const BOARD_W     = 400;
-const BOARD_H     = 800;
+const BOARD_W     = 800;
+const BOARD_H     = 400;
 const PUCK_R      = 15;
 const MALLET_R    = 30;
-const GOAL_LEFT   = (BOARD_W - 120) / 2;
-const GOAL_RIGHT  = GOAL_LEFT + 120;
+// Goals on LEFT (x=0) and RIGHT (x=BOARD_W), goal opening is Y range
+const GOAL_TOP    = (BOARD_H - 130) / 2;
+const GOAL_BOTTOM = GOAL_TOP + 130;
 const FRICTION    = 0.99;
 const MAX_SPEED   = 18;
 const RESTITUTION = 0.9;
@@ -58,8 +59,8 @@ function createRoom(p1, p2, io) {
 
   const state = {
     roomId, io,
-    p1: { ...p1, x: BOARD_W / 2, y: BOARD_H * 0.75, score: 0, vx: 0, vy: 0 },
-    p2: { ...p2, x: BOARD_W / 2, y: BOARD_H * 0.25, score: 0, vx: 0, vy: 0 },
+    p1: { ...p1, x: BOARD_W * 0.75, y: BOARD_H / 2, score: 0, vx: 0, vy: 0 },
+    p2: { ...p2, x: BOARD_W * 0.25, y: BOARD_H / 2, score: 0, vx: 0, vy: 0 },
     puck: { x: BOARD_W / 2, y: BOARD_H / 2, vx: 0, vy: 0 },
     status: 'countdown',
     tickInterval: null,
@@ -175,23 +176,29 @@ function resolveMalletPuck(mallet, puck) {
 }
 
 function resolveWalls(puck) {
-  const inGoalX = puck.x > GOAL_LEFT && puck.x < GOAL_RIGHT;
+  // Horizontal board: goals on LEFT (x=0) and RIGHT (x=BOARD_W)
+  // Goal opening is Y range [GOAL_TOP, GOAL_BOTTOM]
+  const inGoalY = puck.y > GOAL_TOP && puck.y < GOAL_BOTTOM;
 
+  // Top wall
   if (puck.y - PUCK_R <= 0) {
-    if (inGoalX) return 'top';
     puck.y  = PUCK_R;
     puck.vy = Math.abs(puck.vy) * RESTITUTION;
   }
+  // Bottom wall
   if (puck.y + PUCK_R >= BOARD_H) {
-    if (inGoalX) return 'bottom';
     puck.y  = BOARD_H - PUCK_R;
     puck.vy = -Math.abs(puck.vy) * RESTITUTION;
   }
-  if (puck.x - PUCK_R < 0) {
+  // Left wall — goal opening or bounce
+  if (puck.x - PUCK_R <= 0) {
+    if (inGoalY) return 'left';
     puck.x  = PUCK_R;
     puck.vx = Math.abs(puck.vx) * RESTITUTION;
   }
-  if (puck.x + PUCK_R > BOARD_W) {
+  // Right wall — goal opening or bounce
+  if (puck.x + PUCK_R >= BOARD_W) {
+    if (inGoalY) return 'right';
     puck.x  = BOARD_W - PUCK_R;
     puck.vx = -Math.abs(puck.vx) * RESTITUTION;
   }
@@ -202,7 +209,8 @@ function handleGoal(state, side) {
   if (state.status !== 'playing') return;
   state.status = 'goal';
 
-  const scorer = side === 'top' ? 'p1' : 'p2';
+  // 'left' goal = p1 scores (puck entered p2's goal), 'right' = p2 scores
+  const scorer = side === 'left' ? 'p1' : 'p2';
   if (scorer === 'p1') state.p1.score++;
   else                 state.p2.score++;
 
@@ -225,8 +233,8 @@ function handleGoal(state, side) {
 
 function resetPuck(state) {
   state.puck = { x: BOARD_W / 2, y: BOARD_H / 2, vx: 0, vy: 0 };
-  state.p1.x = BOARD_W / 2; state.p1.y = BOARD_H * 0.75;
-  state.p2.x = BOARD_W / 2; state.p2.y = BOARD_H * 0.25;
+  state.p1.x = BOARD_W * 0.75; state.p1.y = BOARD_H / 2;
+  state.p2.x = BOARD_W * 0.25; state.p2.y = BOARD_H / 2;
 }
 
 async function endMatch(state, winner) {
@@ -311,8 +319,9 @@ function handlePlayerInput(socketId, input, isPlayer1) {
   let x = Math.max(r, Math.min(BOARD_W - r, input.x));
   let y = Math.max(r, Math.min(BOARD_H - r, input.y));
 
-  if (isPlayer1) y = Math.max(BOARD_H / 2 + r, y);
-  else           y = Math.min(BOARD_H / 2 - r, y);
+  // Horizontal board: p1 = right half (x > W/2), p2 = left half (x < W/2)
+  if (isPlayer1) x = Math.max(BOARD_W / 2 + r, x);
+  else           x = Math.min(BOARD_W / 2 - r, x);
 
   player.vx = x - player.x;
   player.vy = y - player.y;

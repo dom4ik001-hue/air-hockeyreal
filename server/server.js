@@ -126,7 +126,7 @@ io.on('connection', socket => {
     if (typeof x !== 'number' || typeof y !== 'number') return;
     if (!isFinite(x) || !isFinite(y)) return;
     // Broad range check (server clamps precisely in roomManager)
-    if (x < -100 || x > 600 || y < -100 || y > 1000) return;
+    if (x < -100 || x > 900 || y < -100 || y > 500) return;
 
     const playerIndex = getPlayerIndex(socket.id);
     if (playerIndex === null) return;

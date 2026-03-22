@@ -80,7 +80,8 @@
 }
 
 /* Winrate column */
-.lb-winrate {
+.lb-winrate,
+.lb-wr {
   text-align: right;
   color: var(--text-secondary);
   font-size: 13px;
