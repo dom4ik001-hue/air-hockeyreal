@@ -415,8 +415,7 @@ function bindAdminEvents() {
       document.getElementById('admin-tab-' + tab.dataset.tab).classList.remove('hidden');
       if (tab.dataset.tab === 'stats') loadAdminStats();
       if (tab.dataset.tab === 'game') loadAdminGameStatus();
-      if (tab.dataset.tab === 'matches') loadAdminMatches();
-    });
+      if (tab.dataset.tab === 'matches') loadAdminMatches();    });
   });
 
   // News form
@@ -519,13 +518,9 @@ function bindAdminEvents() {
     } catch(e) { showToast('Ошибка', 'error'); }
   });
 
-  // ELO management (admin only)
-  var eloBtn = document.getElementById('admin-elo-btn');
-  if (eloBtn) eloBtn.addEventListener('click', async function() {
-    var username = document.getElementById('admin-elo-username').value.trim();
-    var amount = parseInt(document.getElementById('admin-elo-amount').value);
-    var mode = document.getElementById('admin-elo-mode').value;
-    if (!username || isNaN(amount)) return;
+  // ELO management (admin only) — dedicated tab
+  async function applyElo(username, amount, mode) {
+    if (!username || isNaN(amount)) { showToast('Введите никнейм и количество', 'warning'); return; }
     try {
       var token = localStorage.getItem('ah_token');
       var r = await fetch('/api/admin/elo', {
@@ -535,8 +530,26 @@ function bindAdminEvents() {
       });
       var d = await r.json();
       if (!r.ok) { showToast(d.message || 'Ошибка', 'error'); return; }
-      showToast('📈 ' + username + ' → ' + d.newElo + ' ELO', 'success'); loadAdminPlayers();
+      var resultEl = document.getElementById('admin-elo-result');
+      if (resultEl) resultEl.textContent = '✅ ' + username + ' → ' + d.newElo + ' ELO';
+      showToast('📈 ' + username + ' → ' + d.newElo + ' ELO', 'success');
     } catch(e) { showToast('Ошибка', 'error'); }
+  }
+  var eloBtn = document.getElementById('admin-elo-btn');
+  if (eloBtn) eloBtn.onclick = async function() {
+    var username = document.getElementById('admin-elo-username').value.trim();
+    var amount = parseInt(document.getElementById('admin-elo-amount').value);
+    var mode = document.getElementById('admin-elo-mode').value;
+    await applyElo(username, amount, mode);
+  };
+  document.querySelectorAll('.admin-elo-preset').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var username = document.getElementById('admin-elo-username').value.trim();
+      var amount = parseInt(btn.dataset.amount);
+      var mode = btn.dataset.mode;
+      if (username) { document.getElementById('admin-elo-amount').value = amount; document.getElementById('admin-elo-mode').value = mode; applyElo(username, amount, mode); }
+      else { document.getElementById('admin-elo-username').focus(); showToast('Введите никнейм', 'warning'); }
+    });
   });
 
   // Matches refresh
