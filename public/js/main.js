@@ -204,8 +204,9 @@ function startOnlineSearch() {
   var elapsed = 0, range = 200;
   searchTimer = setInterval(function() {
     elapsed++;
-    if (elapsed % 30 === 0) range = Math.min(range + 100, 1000);
-    rangeText.textContent = 'Диапазон ELO: ±' + range;
+    rangeText.textContent = elapsed >= 20
+      ? '🤖 Подбираем бота...'
+      : 'Поиск соперника... (' + (20 - elapsed) + 'с до бота)';
     timeText.textContent = elapsed + ' сек.';
   }, 1000);
   offSocketEvent('authenticated', _onAuthenticated);

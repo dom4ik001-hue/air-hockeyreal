@@ -72,7 +72,7 @@ function createRoom(p1, p2, io) {
   socketToRoom.set(p2.socketId, roomId);
 
   const s1 = io.sockets.sockets.get(p1.socketId);
-  const s2 = io.sockets.sockets.get(p2.socketId);
+  const s2 = p2.isBot ? null : io.sockets.sockets.get(p2.socketId);
   if (s1) s1.join(roomId);
   if (s2) s2.join(roomId);
 
@@ -249,8 +249,7 @@ async function endMatch(state, winner) {
   let newEloP1 = state.p1.elo, newEloP2 = state.p2.elo;
 
   if (state.p1.userId && state.p2.userId) {
-    try {
-      const winnerUser = await dbFindUser(winnerId);
+    try {      const winnerUser = await dbFindUser(winnerId);
       const loserUser  = await dbFindUser(loserId);
 
       if (winnerUser && loserUser) {
