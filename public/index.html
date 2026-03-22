@@ -160,6 +160,10 @@
         </button>
       </div>
     </div>
+
+    <div class="menu-footer">
+      🤖 Сделано с помощью нейронок
+    </div>
   </div>
 
   <!-- ===== PLAY SETUP SCREEN (режим + карта) ===== -->
@@ -356,6 +360,13 @@
         <button class="btn btn-icon-only modal-close" id="close-settings">✖</button>
       </div>
       <div class="settings-body">
+        <div class="setting-row">
+          <label>📱 Управление (мобильное)</label>
+          <select id="setting-mobile-control" class="setting-select">
+            <option value="joystick">🕹️ Джойстик</option>
+            <option value="touch">👆 Пальцем (прямое)</option>
+          </select>
+        </div>
         <div class="setting-row">
           <label>🔊 Звук</label>
           <label class="toggle-switch"><input type="checkbox" id="setting-sound" checked /><span class="toggle-slider"></span></label>

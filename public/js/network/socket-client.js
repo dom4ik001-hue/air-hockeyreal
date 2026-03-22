@@ -15,6 +15,7 @@ export function connectSocket() {
 
   socket.on('connect', () => {
     console.log('[Socket] Connected:', socket.id);
+    _emit('_connected', null);
     // Auto-authenticate if token exists
     const token = localStorage.getItem('ah_token');
     if (token) socket.emit('authenticate', { token });

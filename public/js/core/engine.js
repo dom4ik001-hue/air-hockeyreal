@@ -41,7 +41,9 @@ export class GameEngine {
     if (mode === 'local') {
       this.input.setMode('local');
     } else if (this._isMobile) {
-      this.input.setMode('joystick');
+      // Respect user setting: 'joystick' or 'touch' (direct finger)
+      const mobileControl = options.mobileControl || 'joystick';
+      this.input.setMode(mobileControl === 'touch' ? 'mouse' : 'joystick');
     } else {
       this.input.setMode('mouse');
     }
