@@ -1,5 +1,5 @@
 /**
- * newsRoutes.js — News API (public read, admin write)
+ * newsRoutes.js — News API (public read, admin write) + Admin game controls
  */
 const express = require('express');
 const { requireAuth } = require('./apiRoutes');
@@ -8,6 +8,13 @@ const router = express.Router();
 // In-memory news store (persists until server restart)
 const news = [];
 let nextId = 1;
+
+// Game state controlled by admin
+const gameControl = {
+  maintenanceMode: false,
+  maintenanceMessage: 'Сервер на техническом обслуживании. Скоро вернёмся!',
+  onlinePlayEnabled: true,
+};
 
 const ADMIN_USERNAME = 'dom4ik001';
 
@@ -49,4 +56,57 @@ router.delete('/admin/news/:id', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── Admin: game control ──────────────────────────────────────
+
+// GET /api/admin/status — admin only
+router.get('/admin/status', requireAuth, async (req, res) => {
+  if (!await isAdmin(req)) return res.status(403).json({ message: 'Нет доступа' });
+  const mem = require('../config/memoryStore');
+  const { isDbConnected } = require('../config/db');
+  let userCount = 0;
+  try {
+    if (isDbConnected()) {
+      userCount = await require('../models/User').countDocuments();
+    } else {
+      userCount = mem.getAllUsers ? mem.getAllUsers().length : 0;
+    }
+  } catch {}
+  res.json({
+    maintenanceMode: gameControl.maintenanceMode,
+    maintenanceMessage: gameControl.maintenanceMessage,
+    onlinePlayEnabled: gameControl.onlinePlayEnabled,
+    newsCount: news.length,
+    userCount,
+    uptime: Math.floor(process.uptime()),
+    dbConnected: isDbConnected(),
+  });
+});
+
+// POST /api/admin/maintenance — toggle maintenance mode
+router.post('/admin/maintenance', requireAuth, async (req, res) => {
+  if (!await isAdmin(req)) return res.status(403).json({ message: 'Нет доступа' });
+  const { enabled, message } = req.body;
+  gameControl.maintenanceMode = !!enabled;
+  if (message) gameControl.maintenanceMessage = message;
+  res.json({ ok: true, maintenanceMode: gameControl.maintenanceMode, maintenanceMessage: gameControl.maintenanceMessage });
+});
+
+// POST /api/admin/online-play — toggle online play
+router.post('/admin/online-play', requireAuth, async (req, res) => {
+  if (!await isAdmin(req)) return res.status(403).json({ message: 'Нет доступа' });
+  const { enabled } = req.body;
+  gameControl.onlinePlayEnabled = !!enabled;
+  res.json({ ok: true, onlinePlayEnabled: gameControl.onlinePlayEnabled });
+});
+
+// GET /api/game/status — public, used by client to check maintenance
+router.get('/game/status', (req, res) => {
+  res.json({
+    maintenanceMode: gameControl.maintenanceMode,
+    maintenanceMessage: gameControl.maintenanceMessage,
+    onlinePlayEnabled: gameControl.onlinePlayEnabled,
+  });
+});
+
 module.exports = router;
+module.exports.gameControl = gameControl;

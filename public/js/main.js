@@ -353,6 +353,7 @@ function _newsTypeLabel(t) {
 function openAdminPanel() {
   if (!currentUser || currentUser.username !== 'dom4ik001') return;
   openModal('modal-admin');
+  loadAdminStats();
 }
 
 function bindAdminEvents() {
@@ -360,6 +361,20 @@ function bindAdminEvents() {
   if (btn) btn.addEventListener('click', openAdminPanel);
   var closeBtn = document.getElementById('close-admin');
   if (closeBtn) closeBtn.addEventListener('click', function() { closeModal('modal-admin'); });
+
+  // Tabs
+  document.querySelectorAll('.admin-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelectorAll('.admin-tab-content').forEach(function(c) { c.classList.add('hidden'); });
+      tab.classList.add('active');
+      document.getElementById('admin-tab-' + tab.dataset.tab).classList.remove('hidden');
+      if (tab.dataset.tab === 'stats') loadAdminStats();
+      if (tab.dataset.tab === 'game') loadAdminGameStatus();
+    });
+  });
+
+  // News form
   var form = document.getElementById('admin-news-form');
   if (form) form.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -378,6 +393,8 @@ function bindAdminEvents() {
       loadNews();
     } catch(e) { showToast('Ошибка публикации', 'error'); }
   });
+
+  // Delete news
   var delBtn = document.getElementById('admin-news-delete');
   if (delBtn) delBtn.addEventListener('click', async function() {
     var id = document.getElementById('admin-delete-id').value.trim();
@@ -388,9 +405,78 @@ function bindAdminEvents() {
         method: 'DELETE',
         headers: { 'Authorization': 'Bearer ' + token }
       });
+      document.getElementById('admin-delete-id').value = '';
       showToast('Удалено', 'success'); loadNews();
     } catch(e) { showToast('Ошибка удаления', 'error'); }
   });
+
+  // Maintenance save
+  var maintSave = document.getElementById('admin-maintenance-save');
+  if (maintSave) maintSave.addEventListener('click', async function() {
+    var enabled = document.getElementById('admin-maintenance-toggle').checked;
+    var message = document.getElementById('admin-maintenance-msg').value.trim();
+    try {
+      var token = localStorage.getItem('ah_token');
+      await fetch('/api/admin/maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ enabled: enabled, message: message || undefined })
+      });
+      showToast(enabled ? '🔧 Тех. перерыв включён' : '✅ Тех. перерыв выключен', 'success');
+    } catch(e) { showToast('Ошибка', 'error'); }
+  });
+
+  // Online play save
+  var onlineSave = document.getElementById('admin-online-save');
+  if (onlineSave) onlineSave.addEventListener('click', async function() {
+    var enabled = document.getElementById('admin-online-toggle').checked;
+    try {
+      var token = localStorage.getItem('ah_token');
+      await fetch('/api/admin/online-play', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ enabled: enabled })
+      });
+      showToast(enabled ? '🌐 Онлайн включён' : '🚫 Онлайн выключен', 'success');
+    } catch(e) { showToast('Ошибка', 'error'); }
+  });
+
+  // Stats refresh
+  var statsRefresh = document.getElementById('admin-stats-refresh');
+  if (statsRefresh) statsRefresh.addEventListener('click', loadAdminStats);
+}
+
+async function loadAdminGameStatus() {
+  try {
+    var token = localStorage.getItem('ah_token');
+    var res = await fetch('/api/admin/status', { headers: { 'Authorization': 'Bearer ' + token } });
+    var data = await res.json();
+    var maintToggle = document.getElementById('admin-maintenance-toggle');
+    var maintMsg = document.getElementById('admin-maintenance-msg');
+    var onlineToggle = document.getElementById('admin-online-toggle');
+    if (maintToggle) maintToggle.checked = !!data.maintenanceMode;
+    if (maintMsg) maintMsg.value = data.maintenanceMessage || '';
+    if (onlineToggle) onlineToggle.checked = data.onlinePlayEnabled !== false;
+  } catch(e) {}
+}
+
+async function loadAdminStats() {
+  try {
+    var token = localStorage.getItem('ah_token');
+    var res = await fetch('/api/admin/status', { headers: { 'Authorization': 'Bearer ' + token } });
+    var data = await res.json();
+    var el = function(id) { return document.getElementById(id); };
+    if (el('stat-users')) el('stat-users').textContent = data.userCount || 0;
+    if (el('stat-news')) el('stat-news').textContent = data.newsCount || 0;
+    if (el('stat-uptime')) el('stat-uptime').textContent = _formatUptime(data.uptime || 0);
+    if (el('stat-db')) el('stat-db').textContent = data.dbConnected ? '✅ OK' : '💾 RAM';
+  } catch(e) {}
+}
+
+function _formatUptime(sec) {
+  if (sec < 60) return sec + 'с';
+  if (sec < 3600) return Math.floor(sec / 60) + 'м';
+  return Math.floor(sec / 3600) + 'ч ' + Math.floor((sec % 3600) / 60) + 'м';
 }
 
 async function tryAutoLogin() {

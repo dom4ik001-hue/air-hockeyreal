@@ -113,6 +113,15 @@ io.on('connection', socket => {
   socket.on('find_match', () => {
     const userData = socketUsers.get(socket.id);
     if (!userData) { socket.emit('auth_error', { message: 'Требуется авторизация' }); return; }
+    const { gameControl } = require('./routes/newsRoutes');
+    if (gameControl.maintenanceMode) {
+      socket.emit('auth_error', { message: '🔧 ' + (gameControl.maintenanceMessage || 'Тех. перерыв') });
+      return;
+    }
+    if (!gameControl.onlinePlayEnabled) {
+      socket.emit('auth_error', { message: 'Онлайн-игра временно отключена' });
+      return;
+    }
     joinQueue({ socketId: socket.id, userId: userData.userId, username: userData.username, elo: userData.elo });
     socket.emit('search_status', { status: 'searching' });
   });

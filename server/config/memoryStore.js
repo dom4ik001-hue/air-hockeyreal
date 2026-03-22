@@ -72,5 +72,6 @@ function createMatch(data) {
 
 module.exports = {
   createUser, findUserById, findUserByUsername,
-  updateUser, getTopUsers, createMatch
+  updateUser, getTopUsers, createMatch,
+  getAllUsers: () => Array.from(users.values()),
 };

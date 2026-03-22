@@ -412,7 +412,16 @@
         <h2>🛡️ Админ панель</h2>
         <button class="btn btn-icon-only modal-close" id="close-admin">✖</button>
       </div>
-      <div class="admin-body">
+
+      <!-- Tabs -->
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-tab="news">📢 Новости</button>
+        <button class="admin-tab" data-tab="game">🎮 Игра</button>
+        <button class="admin-tab" data-tab="stats">📊 Статистика</button>
+      </div>
+
+      <!-- Tab: News -->
+      <div class="admin-body admin-tab-content" id="admin-tab-news">
         <h3>Опубликовать новость</h3>
         <form id="admin-news-form">
           <div class="form-group">
@@ -437,6 +446,64 @@
           <button class="btn btn-danger" id="admin-news-delete">🗑️ Удалить</button>
         </div>
       </div>
+
+      <!-- Tab: Game -->
+      <div class="admin-body admin-tab-content hidden" id="admin-tab-game">
+        <h3>Режим обслуживания</h3>
+        <div class="admin-control-row">
+          <span>🔧 Тех. перерыв</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="admin-maintenance-toggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="form-group" style="margin-top:10px">
+          <label>Сообщение игрокам</label>
+          <input id="admin-maintenance-msg" type="text" placeholder="Сервер на тех. обслуживании..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:8px;color:var(--text-primary)" />
+        </div>
+        <button class="btn btn-primary btn-full" id="admin-maintenance-save" style="margin-top:8px">💾 Сохранить</button>
+
+        <hr style="border-color:var(--glass-border);margin:16px 0">
+
+        <h3>Онлайн-игра</h3>
+        <div class="admin-control-row">
+          <span>🌐 Онлайн матчи</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="admin-online-toggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <button class="btn btn-primary btn-full" id="admin-online-save" style="margin-top:10px">💾 Сохранить</button>
+      </div>
+
+      <!-- Tab: Stats -->
+      <div class="admin-body admin-tab-content hidden" id="admin-tab-stats">
+        <h3>Статистика сервера</h3>
+        <div class="admin-stats-grid" id="admin-stats-grid">
+          <div class="admin-stat-card glass-panel">
+            <span class="admin-stat-icon">👥</span>
+            <span class="admin-stat-label">Игроков</span>
+            <span class="admin-stat-val" id="stat-users">—</span>
+          </div>
+          <div class="admin-stat-card glass-panel">
+            <span class="admin-stat-icon">📢</span>
+            <span class="admin-stat-label">Новостей</span>
+            <span class="admin-stat-val" id="stat-news">—</span>
+          </div>
+          <div class="admin-stat-card glass-panel">
+            <span class="admin-stat-icon">⏱️</span>
+            <span class="admin-stat-label">Аптайм</span>
+            <span class="admin-stat-val" id="stat-uptime">—</span>
+          </div>
+          <div class="admin-stat-card glass-panel">
+            <span class="admin-stat-icon">🗄️</span>
+            <span class="admin-stat-label">База данных</span>
+            <span class="admin-stat-val" id="stat-db">—</span>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-full" id="admin-stats-refresh" style="margin-top:12px">🔄 Обновить</button>
+      </div>
+
     </div>
   </div>
 
