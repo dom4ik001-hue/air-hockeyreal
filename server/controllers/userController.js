@@ -8,13 +8,18 @@ async function getProfile(req, res) {
   try {
     let user;
     if (isDbConnected()) {
-      const User = require('../models/User');
-      user = await User.findById(req.userId).select('-password_hash');
+      try {
+        const User = require('../models/User');
+        user = await User.findById(req.userId).select('-password_hash');
+      } catch {
+        // Invalid ObjectId format — fall through to memory/token restore
+        user = null;
+      }
     } else {
       user = mem.findUserById(req.userId);
     }
 
-    // If not found (server restarted, in-memory wiped) — restore ghost from token
+    // If not found anywhere — restore ghost user from token payload
     if (!user && req.username) {
       user = {
         _id:            req.userId,
@@ -27,10 +32,7 @@ async function getProfile(req, res) {
         banned:         false,
         created_at:     new Date(),
       };
-      // Re-register in memory so future lookups work
-      if (!isDbConnected()) {
-        mem.restoreUser(user);
-      }
+      if (!isDbConnected()) mem.restoreUser(user);
     }
 
     if (!user) return res.status(404).json({ message: 'Пользователь не найден' });

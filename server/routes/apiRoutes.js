@@ -25,9 +25,9 @@ function requireAuth(req, res, next) {
   } catch (err) {
     // Fallback: decode without signature check (handles old tokens with different secret)
     const payload = jwt.decode(token);
-    if (payload && payload.username) {
+    if (payload && payload.sub) {
       req.userId   = payload.sub;
-      req.username = payload.username;
+      req.username = payload.username || null;
       req.userRole = payload.role || 'player';
       return next();
     }

@@ -18,7 +18,9 @@ const gameControl = {
 // ─── Helpers ──────────────────────────────────────────────────
 async function dbGetUser(userId) {
   const { isDbConnected } = require('../config/db');
-  if (isDbConnected()) return require('../models/User').findById(userId);
+  if (isDbConnected()) {
+    try { return require('../models/User').findById(userId); } catch { return null; }
+  }
   return require('../config/memoryStore').findUserById(userId);
 }
 

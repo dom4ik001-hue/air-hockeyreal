@@ -91,11 +91,11 @@ io.on('connection', socket => {
       payload = jwt.verify(token, JWT_SECRET);
     } catch {
       payload = jwt.decode(token);
-      if (!payload || !payload.username) {
+      if (!payload || !payload.sub) {
         socket.emit('auth_error', { message: 'Недействительный токен' });
         return;
       }
-      console.log('[Socket] Token sig mismatch, decoded payload for:', payload.username);
+      console.log('[Socket] Token sig mismatch, using decoded payload, sub:', payload.sub);
     }
     try {
       const mem = require('./config/memoryStore');
