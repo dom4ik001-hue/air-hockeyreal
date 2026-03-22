@@ -17,7 +17,7 @@ function requireAuth(req, res, next) {
 
   const token = header.slice(7);
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_change_in_production');
     req.userId = payload.sub;
     next();
   } catch (err) {

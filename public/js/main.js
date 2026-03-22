@@ -416,7 +416,7 @@ function bindAdminEvents() {
     if (!text) return;
     try {
       var token = localStorage.getItem('ah_token');
-      await fetch('/api/admin/news', {
+      await fetch('/api/news', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         body: JSON.stringify({ text: text, type: type })
@@ -432,7 +432,7 @@ function bindAdminEvents() {
     if (!id) return;
     try {
       var token = localStorage.getItem('ah_token');
-      await fetch('/api/admin/news/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+      await fetch('/api/news/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
       document.getElementById('admin-delete-id').value = '';
       showToast('Удалено', 'success'); loadNews();
     } catch(e) { showToast('Ошибка удаления', 'error'); }
