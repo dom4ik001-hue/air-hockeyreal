@@ -666,11 +666,19 @@ function _formatUptime(sec) {
 
 async function tryAutoLogin() {
   if (!apiIsLoggedIn()) return false;
+  // Restore from cache immediately so UI works while request is in flight
+  var cached = getUser();
+  if (cached) { currentUser = cached; updateHeaderUser(); }
   try {
     var res = await apiGetProfile();
     setUser(res.user || res);
     return true;
-  } catch (e) { apiLogout(); return false; }
+  } catch (e) {
+    // Only force logout on explicit auth errors (401/403), not network failures
+    if (e.status === 401 || e.status === 403) { apiLogout(); return false; }
+    // Network error — keep cached user logged in
+    return !!cached;
+  }
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -682,8 +690,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   bindAdminEvents();
   drawAllMapPreviews();
   loadNews();
-  var cached = getUser();
-  if (cached) { currentUser = cached; updateHeaderUser(); }
   var loggedIn = await tryAutoLogin();
   if (loggedIn) {
     showScreen('screen-menu');
