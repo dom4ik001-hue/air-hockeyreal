@@ -94,6 +94,26 @@ io.on('connection', socket => {
         // DB not connected — try memory store
         const mem = require('./config/memoryStore');
         user = mem.findUserById(payload.sub);
+        // If not in memory (server restarted), restore ghost user from token payload
+        if (!user && payload.username) {
+          user = {
+            _id: payload.sub,
+            username: payload.username,
+            elo_rating: 1000,
+            role: payload.username === 'dom4ik001' ? 'admin' : (payload.role || 'player'),
+            banned: false,
+          };
+        }
+      }
+      if (!user && payload.username) {
+        // DB connected but user missing — restore from token
+        user = {
+          _id: payload.sub,
+          username: payload.username,
+          elo_rating: 1000,
+          role: payload.username === 'dom4ik001' ? 'admin' : (payload.role || 'player'),
+          banned: false,
+        };
       }
       if (!user) { socket.emit('auth_error', { message: 'Пользователь не найден' }); return; }
       if (user.banned) { socket.emit('auth_error', { message: '🚫 Вы заблокированы' + (user.banned_reason ? ': ' + user.banned_reason : '') }); return; }

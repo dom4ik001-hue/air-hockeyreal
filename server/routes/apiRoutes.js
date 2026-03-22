@@ -18,7 +18,9 @@ function requireAuth(req, res, next) {
   const token = header.slice(7);
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_change_in_production');
-    req.userId = payload.sub;
+    req.userId   = payload.sub;
+    req.username = payload.username || null;
+    req.userRole = payload.role || 'player';
     next();
   } catch (err) {
     return res.status(401).json({ message: 'Недействительный токен' });

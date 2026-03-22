@@ -14,6 +14,25 @@ async function getProfile(req, res) {
       user = mem.findUserById(req.userId);
     }
 
+    // If not found (server restarted, in-memory wiped) — restore ghost from token
+    if (!user && req.username) {
+      user = {
+        _id:            req.userId,
+        username:       req.username,
+        elo_rating:     1000,
+        matches_played: 0,
+        matches_won:    0,
+        matches_lost:   0,
+        role:           req.username === 'dom4ik001' ? 'admin' : (req.userRole || 'player'),
+        banned:         false,
+        created_at:     new Date(),
+      };
+      // Re-register in memory so future lookups work
+      if (!isDbConnected()) {
+        mem.restoreUser(user);
+      }
+    }
+
     if (!user) return res.status(404).json({ message: 'Пользователь не найден' });
 
     return res.json({

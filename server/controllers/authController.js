@@ -47,7 +47,7 @@ async function register(req, res) {
 
     const role = username === 'dom4ik001' ? 'admin' : 'player';
     const user = await createUser({ username, password_hash, role });
-    const token = signToken(user._id);
+    const token = signToken(user._id, user.username, role);
 
     return res.status(201).json({ token, user: sanitizeUser(user) });
   } catch (err) {
@@ -78,7 +78,7 @@ async function login(req, res) {
       return res.status(401).json({ message: 'Неверный никнейм или пароль' });
     }
 
-    const token = signToken(user._id);
+    const token = signToken(user._id, user.username, user.role || 'player');
     return res.json({ token, user: sanitizeUser(user) });
   } catch (err) {
     console.error('[Auth] Login error:', err);
@@ -86,9 +86,9 @@ async function login(req, res) {
   }
 }
 
-function signToken(userId) {
+function signToken(userId, username, role) {
   return jwt.sign(
-    { sub: userId },
+    { sub: userId, username, role: role || 'player' },
     process.env.JWT_SECRET || 'dev_secret_change_in_production',
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
