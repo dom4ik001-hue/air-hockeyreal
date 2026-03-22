@@ -90,6 +90,35 @@ export function resolveMalletPuck(mallet, puck) {
 }
 
 /**
+ * Resolve puck vs circular obstacles (bumpers).
+ * @returns {boolean} true if any collision occurred
+ */
+export function resolvePuckObstacles(puck, board) {
+  if (!board.obstacles || !board.obstacles.length) return false;
+  let hit = false;
+  for (const o of board.obstacles) {
+    const dx   = puck.x - o.x;
+    const dy   = puck.y - o.y;
+    const dist = Math.hypot(dx, dy);
+    const minD = puck.radius + o.r;
+    if (dist < minD && dist > 0) {
+      const nx = dx / dist;
+      const ny = dy / dist;
+      // Push puck out
+      puck.x = o.x + nx * minD;
+      puck.y = o.y + ny * minD;
+      // Reflect velocity
+      const dot = puck.vx * nx + puck.vy * ny;
+      puck.vx -= 2 * dot * nx * 0.9;
+      puck.vy -= 2 * dot * ny * 0.9;
+      _capSpeed(puck);
+      hit = true;
+    }
+  }
+  return hit;
+}
+
+/**
  * Server-side: clamp mallet to its half (horizontal board).
  * p1 = right half (x > W/2), p2 = left half (x < W/2)
  */

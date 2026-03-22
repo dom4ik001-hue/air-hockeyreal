@@ -9,13 +9,13 @@ const { isDbConnected } = require('../config/db');
 const mem = require('../config/memoryStore');
 
 // ─── Physics constants ────────────────────────────────────────
-const BOARD_W     = 800;
-const BOARD_H     = 400;
+const BOARD_W     = 1200;
+const BOARD_H     = 600;
 const PUCK_R      = 15;
 const MALLET_R    = 30;
 // Goals on LEFT (x=0) and RIGHT (x=BOARD_W), goal opening is Y range
-const GOAL_TOP    = (BOARD_H - 130) / 2;
-const GOAL_BOTTOM = GOAL_TOP + 130;
+const GOAL_TOP    = (BOARD_H - 160) / 2;
+const GOAL_BOTTOM = GOAL_TOP + 160;
 const FRICTION    = 0.99;
 const MAX_SPEED   = 18;
 const RESTITUTION = 0.9;

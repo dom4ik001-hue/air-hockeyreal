@@ -8,7 +8,7 @@ import { Puck }     from '../entities/puck.js';
 import { Mallet }   from '../entities/mallet.js';
 import { Renderer } from './renderer.js';
 import { InputHandler } from './input.js';
-import { resolvePuckWalls, resolveMalletPuck } from './physics.js';
+import { resolvePuckWalls, resolveMalletPuck, resolvePuckObstacles } from './physics.js';
 
 export const GameState = {
   IDLE: 'IDLE', COUNTDOWN: 'COUNTDOWN', PLAYING: 'PLAYING',
@@ -22,8 +22,8 @@ export class GameEngine {
     this.options = options;
 
     // HORIZONTAL: wide board
-    this.BOARD_W = 800;
-    this.BOARD_H = 400;
+    this.BOARD_W = 1200;
+    this.BOARD_H = 600;
 
     const mapId  = options.mapId || 'classic';
     this.board   = new Board(this.BOARD_W, this.BOARD_H, mapId);
@@ -140,6 +140,7 @@ export class GameEngine {
     }
 
     this.puck.update();
+    resolvePuckObstacles(this.puck, this.board);
     const goal = resolvePuckWalls(this.puck, this.board);
     if (goal) {
       // 'left' goal = p1 scores (p2's goal), 'right' goal = p2 scores (p1's goal)
