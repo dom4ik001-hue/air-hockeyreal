@@ -378,13 +378,14 @@ function _isAdmin() {
 }
 
 function openAdminPanel() {
-  if (!_isAdminOrMod()) return;
+  if (!currentUser) { showToast('Войдите в аккаунт', 'warning'); return; }
+  if (!_isAdminOrMod()) { showToast('Нет доступа', 'error'); return; }
   openModal('modal-admin');
-  // Show/hide admin-only elements
   document.querySelectorAll('[data-admin-only]').forEach(function(el) {
     el.style.display = _isAdmin() ? '' : 'none';
   });
   loadAdminStats();
+  loadAdminGameStatus();
 }
 
 function bindAdminEvents() {
