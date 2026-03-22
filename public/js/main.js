@@ -81,7 +81,11 @@ function bindAuthEvents() {
 }
 
 function bindMenuEvents() {
-  document.getElementById('btn-open-play').addEventListener('click', function() { showScreen('screen-play-setup'); });
+  document.getElementById('btn-open-play').addEventListener('click', function() {
+    // Restore currentUser from cache if needed before entering setup screen
+    if (!currentUser) { var c = getUser(); if (c) { currentUser = c; updateHeaderUser(); } }
+    showScreen('screen-play-setup');
+  });
   document.getElementById('btn-leaderboard').addEventListener('click', openLeaderboard);
   document.getElementById('btn-profile-side').addEventListener('click', openProfileModal);
   document.getElementById('btn-settings-side').addEventListener('click', function() { openModal('modal-settings'); });
@@ -106,11 +110,16 @@ function bindSetupEvents() {
     });
   });
   document.getElementById('btn-setup-back').addEventListener('click', function() { showScreen('screen-menu'); });
-  document.getElementById('btn-start-game').addEventListener('click', function() {
-    if (selectedMode === 'online' && !isLoggedIn()) { showToast('Войдите для онлайн-игры', 'warning'); return; }
+  // Use onclick to prevent duplicate listeners
+  document.getElementById('btn-start-game').onclick = function() {
+    // Always try to restore currentUser from cache before checking
+    if (!currentUser) { var c = getUser(); if (c) { currentUser = c; updateHeaderUser(); } }
+    if (selectedMode === 'online' && !currentUser && !localStorage.getItem('ah_token')) {
+      showToast('Войдите для онлайн-игры', 'warning'); return;
+    }
     if (selectedMode === 'online') { startOnlineSearch(); }
     else { startGame(selectedMode, { mapId: selectedMap }); }
-  });
+  };
 }
 
 function drawAllMapPreviews() {
